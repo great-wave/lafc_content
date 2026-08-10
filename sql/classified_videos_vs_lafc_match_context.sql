@@ -9,11 +9,12 @@ SELECT
   classified_videos.description,
   classified_videos.published_at,
   classified_videos.duration,
+  classified_videos.dur_min,
   classified_videos.view_count,
   classified_videos.like_count,
   classified_videos.comment_count,
   classified_videos.format_family,
-  classified_content_type_final,
+  classified_videos.content_type_final,
 
   lafc_match_context.season,
   lafc_match_context.kickoff_utc,
@@ -40,7 +41,7 @@ SELECT
 
 FROM classified_videos
 
-JOIN lafc_match_context
+LEFT JOIN lafc_match_context
   ON lafc_match_context.kickoff_utc = (
        -- For this video, the latest kickoff that is still at/before it:
        SELECT MAX(kickoff_utc)
