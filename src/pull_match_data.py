@@ -41,8 +41,11 @@ SCHEDULE_API = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{LEAGUE}"
 STANDINGS_API = f"https://site.api.espn.com/apis/v2/sports/soccer/{LEAGUE}"
 LAFC_ABBR = "LAFC"  # we resolve LAFC's numeric team id from the data, never hardcode it
 
-# A polite User-Agent; some ESPN edge nodes reject the bare python-requests UA.
-HTTP_HEADERS = {"User-Agent": "Mozilla/5.0 (LAFC-Content-Scoreboard portfolio project)"}
+# ESPN's Akamai edge blocks some User-Agent strings outright (403 with an
+# "Access Denied" HTML page, before the request reaches ESPN). The rule is
+# opaque and has changed at least once — a "Mozilla/5.0 (...)" string worked
+# originally and is now blocked. This one is verified working as of 2026-08-11.
+HTTP_HEADERS = {"User-Agent": "LAFC-Content-Scoreboard (portfolio project)"}
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_ROOT / "data" / "lafc_content.db"
@@ -110,6 +113,12 @@ def _require(condition, msg):
 def fetch_json(url):
     """GET a URL and return parsed JSON, failing loudly on HTTP or decode errors."""
     resp = requests.get(url, headers=HTTP_HEADERS, timeout=30)
+    if resp.status_code == 403:
+        raise ESPNShapeError(
+            f"403 from {url} — ESPN's CDN is blocking this User-Agent, not your code. "
+            f"Sent: {resp.request.headers.get('User-Agent')!r}. "
+            "Try a different UA string (see HTTP_HEADERS)."
+        )
     resp.raise_for_status()
     try:
         return resp.json()
