@@ -1,7 +1,7 @@
--- This sql query joins the 'classified_videos' and the 'LAFC match context' tables, looking for the latest match kickoff time relative
--- to the publish time of each video. 
+-- This sql query joins the 'classified_videos' and the 'LAFC match context' tables, comparing kickoff times
+-- to the published times of each video. 
 
--- Also added a days since match column for later analysis. 
+-- Also added a days since match column, and a days until match column.
 
 SELECT
   classified_videos.video_id,
@@ -37,7 +37,20 @@ SELECT
   -- Whole-day gap between kickoff and publish. julianday() converts each
   -- timestamp to a day-number, so subtracting gives a difference in days.
 
-  ROUND(julianday(classified_videos.published_at) - julianday(lafc_match_context.kickoff_utc), 2) AS days_since_match
+  ROUND(julianday(classified_videos.published_at) - julianday(lafc_match_context.kickoff_utc), 2) AS days_since_match,
+
+  -- Whole-day gap to the NEXT kickoff after the video. Mirrors the join below,
+  -- which only ever looks backward. Needed because a lot of content is build-up
+  -- for the upcoming match, not follow-up to the last one.
+  -- NULL when no later match exists in the table.
+
+  ROUND(
+    julianday((
+      SELECT MIN(kickoff_utc)
+      FROM lafc_match_context
+      WHERE kickoff_utc > classified_videos.published_at
+    )) - julianday(classified_videos.published_at),
+  2) AS days_until_match
 
 FROM classified_videos
 

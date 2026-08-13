@@ -60,6 +60,12 @@ post-match window is a predictable ~2–3× attention spike. **Plan production
 around the fixture list and publish within 24h of full-time.** Content posted
 2+ days later misses the wave.
 
+> **⚠ Revised 2026-08-12 — see Finding 4.** This finding measures *days since*
+> the previous match only, which mislabels build-up content: 44% of videos are
+> closer to the *next* match than the last one, and the "3–7 days" bucket is
+> 80% pre-match content. The 0–1 day spike survives, but the flat middle of the
+> curve was rising build-up and falling follow-up cancelling out.
+
 ### Finding 2 — Result modulates the spike, but is CONTEXT, not a lever
 
 Within the match-day window, result orders views cleanly — but the team can't
@@ -146,6 +152,123 @@ rivalry opponents outperform? Requires subject tagging (classification pillar).
 
 ---
 
+## Session 2026-08-12 — match-cycle position, channel era, playlist labels
+
+### Finding 4 — Position videos in the match *cycle*, not days-since (CONTROLLABLE)
+
+**Problem with the old measure:** the join only ever looks backward, so a
+matchday hype clip published the night before kickoff was recorded as "5 days
+since the previous match." MLS plays roughly weekly, so build-up content lands
+squarely in the mid `days_since` buckets.
+
+**Scale of the mislabeling:** 1,583 of 3,571 videos (**44.3%**) are closer to the
+next match than the previous one. By old bin: `4–7 days` was **79.9%** pre-match
+content, `30+` was 71.9%, `2–3` and `8–14` about 50% each. Only `0–1` meant what
+its label said.
+
+**Fix:** `sql/classified_videos_vs_lafc_match_context.sql` now also returns
+`days_until_match` (mirrored subquery, `MIN(kickoff_utc) > published_at`).
+Downstream, a signed `days_from_match` takes the *nearer* of the two — negative
+means published before a kickoff. Videos more than 21 days from a match in both
+directions are masked to `NaN` (offseason / pre-2018; 504 videos).
+
+**Result — median engagement rate by cycle position:**
+
+| Position | Videos | Median engagement | Median views |
+|----------|--------|-------------------|--------------|
+| 3–7 days before | 238 | 4.27% | 1,884 |
+| 1–3 days before | 675 | 4.50% | 1,326 |
+| **matchday (<24h before)** | 202 | **5.05%** | 1,541 |
+| **0–1 day after** | 1,096 | **3.61%** | **2,904** |
+| 2–3 days after | 315 | 4.51% | 1,500 |
+| 4–7 days after | 123 | 4.64% | 1,670 |
+
+The old backward-only cut was nearly flat (medians 3.65–4.59%). The signed
+version shows a real shape: build-up climbs to a matchday peak, collapses after
+kickoff, recovers over the following week.
+
+**Views and engagement move in opposition.** Views roughly double in the 24h
+after a match (2,904 vs a ~1,500 baseline) exactly where engagement *rate*
+bottoms out. Since rate = (likes+comments)/views, a burst of casual highlight
+viewers inflates the denominator. The post-match "dip" is substantially a
+**reach** story, not disengagement.
+
+**Caveat — format composition.** The `0–1 after` bin is 52.8% `match` family,
+which has a structurally low rate. Checked within families: the curve survives
+in `match` (matchday 4.49% vs 2.89% after) and `social` (5.31% vs 4.00%) but
+**not** in `show` (flat 4.8–5.7%). Real, but amplified by composition.
+
+**Actionable takeaway:** matchday content reaches a smaller but far more
+invested audience; the 24h post-match window is a reach spike with diluted
+engagement. These are two different editorial goals and should be judged on
+different metrics.
+
+### Finding 5 — 2024 is a channel-era break, not a results story (CONTEXT)
+
+Median views by year are volatile, not trending: 2,609 (2018) → 923 (2021) →
+3,067 (2022) → **639 (2024)** → 2,600 (2025) → 3,242 (2026).
+
+**On-field 2024 was strong** (19W-7D-8L, 63 GF — third-best in the dataset), so
+the collapse is a content story:
+
+| Year | Videos | Median duration | Share <1 min | Median views |
+|------|--------|-----------------|--------------|--------------|
+| 2023 | 202 | 6.83 min | 3.0% | 1,685 |
+| 2024 | 737 | 4.33 min | 26.1% | **639** |
+| 2025 | 827 | 1.33 min | 43.2% | 2,601 |
+
+2024 is the Shorts pivot plus a 3.6× volume increase. It is not only a mix
+shift — **both duration classes crashed and recovered**: long-form 1,617 → 499 →
+1,242; short-form 5,865 → 2,447 → 5,001.
+
+**Format families move in opposite directions**, which matters for regression:
+`social` up 8× (1,367 → 11,542), `behind_scenes` up 2×, while `show` fell 4×
+(5,540 → 1,410) and `signing` fell 1.8×; `match`/`media`/`feature` flat.
+
+**Implication:** era is not a confound you can subtract with a single date term
+— it *interacts* with format. Either model the interaction or restrict to a
+stable window. **Recommended window: 2025 onward (1,138 videos)**; 2024 is
+mid-pivot with depressed reach in every duration class.
+
+### Finding 6 — Playlists are a better label source than keyword classification
+
+The channel has **56 public playlists, 3,514 memberships covering 2,785 of
+3,571 videos (78%)** — 88% of long-form but only 51% of Shorts. 84% of covered
+videos sit in exactly one playlist. Full pull ≈ 110 quota units.
+
+**Near-perfect labels:** LAFC Weekly, Acción LAFC, Black & Gold Insider (100%
+`show`), In Touch With Steve Cherundolo (100% `media`), LAFC+ (99%), Inside LAFC
+(98%), Behind The Crest (94%), Match Previews (90% `match`).
+
+**Systematic disagreements** reveal a classifier defect:
+
+| Playlist | n | How `format_family` splits it |
+|----------|---|-------------------------------|
+| Interviews | 393 | 44% `media`, 44% `social` |
+| Features | 168 | 52% `social`, 27% `match`, **12% `feature`** |
+| Community & Culture | 99 | 73% `social` |
+| Major News | 33 | 58% `social`, 30% `match` |
+| Highlights | 655 | 77% `match`, 15% `social` |
+
+**Root cause:** `format_family` conflates two orthogonal axes — **subject**
+(what the video is about) and **delivery format** (short/vertical vs long).
+`social` has become a catch-all absorbing subject-based content. A 30-second
+interview clip is both "an interview" and "a short"; forcing one label loses one
+of those facts.
+
+**Recommended rework:** derive *subject* from playlist membership (many-to-many;
+needs a `playlist_items` join table) and *format* from a Shorts probe. Keep the
+keyword classifier as fallback for the uncovered 22%, validated against the
+2,785 labeled videos.
+
+**Detecting Shorts:** there is no `isShort` field in the Data API, and
+`fileDetails.videoStreams[].aspectRatio` is owner-only. `GET
+youtube.com/shorts/{id}` returns **200** for a real Short and **303** for
+anything else. Verified against real IDs — note a 25-second video returned 303,
+so `dur_min < 1` misclassifies.
+
+---
+
 ## Open questions & anomalies
 
 - **7–14 day loss anomaly:** videos 7–14 days after a loss have median 12,183
@@ -156,6 +279,22 @@ rivalry opponents outperform? Requires subject tagging (classification pillar).
   interaction term rather than a confounded main effect.
 - **Format classification:** separate video *length* from *type* so "short wins"
   can be tested as "which type wins." Feeds both Format and Subject pillars.
+  **[Addressed by Finding 6 — split subject (playlists) from format (Shorts
+  probe). Implementation still open.]**
+
+### Next steps (as of 2026-08-12)
+
+1. Add `playlists` / `playlist_items` tables to `src/pull_youtube_data.py`.
+   `fetch_playlist_items` is the existing `fetch_all_video_ids` with the
+   playlist ID parameterized. Membership snapshot already pulled to
+   `data/playlist_items.csv`.
+2. Rework classification: subject from playlists, format from the Shorts probe.
+   Validate the keyword classifier against the 2,785 playlist-labeled videos.
+3. Re-run the match-cycle chart faceted by `format_family` to separate the
+   timing effect from the composition effect (Finding 4 caveat).
+4. Revisit Finding 1's regression using signed `days_from_match` and an
+   `is_matchday × result` interaction.
+5. Decide the analysis window — 2025+ recommended (Finding 5).
 
 ---
 
