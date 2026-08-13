@@ -1,18 +1,11 @@
--- ONE ROW PER VIDEO -- this is the main analysis table. Start here.
+-- ONE ROW PER VIDEO -- this is the main analysis table.
 --
---   df = load_sql('video_labels')
---   df['dur_min'] = pd.to_timedelta(df['duration']).dt.total_seconds() / 60
+
 --
--- All 3,648 videos, one row each, so medians and counts are safe. Everything
--- else is pandas from here.
+-- All videos - one row each, so medians and counts are safe.
 --
--- TWO INDEPENDENT AXES
 --   format          FORMAT  -- short / horizontal / live, from the channel's tabs
 --   primary_subject SUBJECT -- what it is about, from its playlist
---
--- Keeping them separate is the point: a 40-second interview clip is both "an
--- interview" and "a Short". The old format_family fused the two, which is why
--- `social` became a catch-all.
 --
 -- Everything is LEFT JOINed, so all videos survive:
 --   format          NULL if the tab prefixes ever stop covering the uploads
@@ -24,6 +17,7 @@
 
 -- WITH creates named temporary results (CTEs) that the main query below can
 -- treat as tables. They exist only for the life of this query.
+
 WITH smallest_playlist_per_video AS (
 
   -- THE ONE JUDGMENT CALL IN THIS FILE.
@@ -35,6 +29,7 @@ WITH smallest_playlist_per_video AS (
   --
   -- To change that rule, edit the ORDER BY below and every downstream cut
   -- follows. This is the only place it is defined.
+
   SELECT
     ranked_playlists.video_id,
     ranked_playlists.playlist_title,
@@ -86,6 +81,7 @@ SELECT
 
   -- NULLIF turns a zero view_count into NULL, so this returns NULL instead of
   -- raising a division-by-zero error.
+
   ROUND(
     (videos.like_count + videos.comment_count) * 1.0
       / NULLIF(videos.view_count, 0),
@@ -100,6 +96,7 @@ FROM videos
 
 -- LEFT JOIN keeps every row from `videos` even when the right side has no
 -- match. A plain JOIN would silently drop the 815 videos with no playlist.
+
 LEFT JOIN video_formats
   ON video_formats.video_id = videos.video_id
 
