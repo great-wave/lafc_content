@@ -5,11 +5,11 @@
 -- All videos - one row each, so medians and counts are safe.
 --
 --   format          FORMAT  -- short / horizontal / live, from the channel's tabs
---   primary_subject SUBJECT -- what it is about, from its playlist
+--   playlist        SUBJECT -- which LAFC playlist it is filed under
 --
 -- Everything is LEFT JOINed, so all videos survive:
 --   format          NULL if the tab prefixes ever stop covering the uploads
---   primary_subject NULL for the ~22% of videos in no playlist (mostly Shorts)
+--   playlist        NULL for the ~22% of videos in no playlist (mostly Shorts)
 --
 -- To compare playlists against each other instead, use playlist_performance.sql,
 -- which gives one row per membership so a video counts in every playlist it is in.
@@ -88,7 +88,7 @@ SELECT
   5) AS engagement_rate,
 
   video_formats.format,                                         -- FORMAT axis
-  smallest_playlist_per_video.playlist_title AS primary_subject,   -- SUBJECT axis
+  smallest_playlist_per_video.playlist_title AS playlist,          -- SUBJECT axis
   smallest_playlist_per_video.n_playlists,
   every_playlist_per_video.all_playlists
 
