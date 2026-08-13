@@ -2,7 +2,7 @@
 -- Exactly one row per video, so medians and counts are safe.
 --
 -- TWO INDEPENDENT AXES
---   tab             FORMAT  -- short / longform / live, from the channel's tabs
+--   tab             FORMAT  -- short / horizontal / live, from the channel's tabs
 --   primary_subject SUBJECT -- what it is about, from its playlist
 --
 -- Keeping them separate is the point: a 40-second interview clip is both "an
@@ -16,64 +16,85 @@
 -- NOTE: `duration` is raw ISO-8601 ("PT1M30S"). Parse it in pandas:
 --   df['dur_min'] = pd.to_timedelta(df['duration']).dt.total_seconds() / 60
 
-WITH primary_subject AS (
+
+-- WITH creates named temporary results (CTEs) that the main query below can
+-- treat as tables. They exist only for the life of this query.
+WITH smallest_playlist_per_video AS (
+
   -- Mirrors sql/video_primary_subject.sql -- smallest playlist wins.
   -- Duplicated rather than imported so this file runs standalone.
-  SELECT video_id, playlist_title, n_playlists
+  SELECT
+    ranked_playlists.video_id,
+    ranked_playlists.playlist_title,
+    ranked_playlists.n_playlists
+
   FROM (
     SELECT
-      pi.video_id,
-      p.title AS playlist_title,
-      COUNT(*) OVER (PARTITION BY pi.video_id) AS n_playlists,
+      playlist_items.video_id,
+      playlists.title AS playlist_title,
+      COUNT(*) OVER (PARTITION BY playlist_items.video_id) AS n_playlists,
       ROW_NUMBER() OVER (
-        PARTITION BY pi.video_id
-        ORDER BY p.item_count ASC, p.playlist_id ASC
+        PARTITION BY playlist_items.video_id
+        ORDER BY playlists.item_count ASC, playlists.playlist_id ASC
       ) AS rank_in_video
-    FROM playlist_items pi
-    JOIN playlists p ON p.playlist_id = pi.playlist_id
-  )
-  WHERE rank_in_video = 1
+    FROM playlist_items
+    JOIN playlists
+      ON playlists.playlist_id = playlist_items.playlist_id
+  ) AS ranked_playlists
+
+  WHERE ranked_playlists.rank_in_video = 1
 ),
 
-all_subjects AS (
-  -- Every playlist a video belongs to, flattened to one string. Keeps the
-  -- labels the primary_subject rule discarded, without multiplying rows.
+every_playlist_per_video AS (
+
+  -- Every playlist a video belongs to, flattened into one string. Keeps the
+  -- labels the smallest-playlist rule discarded, without multiplying rows.
   SELECT
-    pi.video_id,
-    GROUP_CONCAT(p.title, ' | ') AS all_playlists
-  FROM playlist_items pi
-  JOIN playlists p ON p.playlist_id = pi.playlist_id
-  GROUP BY pi.video_id
+    playlist_items.video_id,
+    GROUP_CONCAT(playlists.title, ' | ') AS all_playlists
+
+  FROM playlist_items
+
+  JOIN playlists
+    ON playlists.playlist_id = playlist_items.playlist_id
+
+  GROUP BY playlist_items.video_id
 )
 
+
 SELECT
-  v.video_id,
-  v.title,
-  v.description,
-  v.published_at,
-  v.duration,
-  v.view_count,
-  v.like_count,
-  v.comment_count,
+  videos.video_id,
+  videos.title,
+  videos.description,
+  videos.published_at,
+  videos.duration,
+  videos.view_count,
+  videos.like_count,
+  videos.comment_count,
 
-  -- NULLIF guards against a zero-view video making this a division by zero.
-  ROUND((v.like_count + v.comment_count) * 1.0 / NULLIF(v.view_count, 0), 5)
-    AS engagement_rate,
+  -- NULLIF turns a zero view_count into NULL, so this returns NULL instead of
+  -- raising a division-by-zero error.
+  ROUND(
+    (videos.like_count + videos.comment_count) * 1.0
+      / NULLIF(videos.view_count, 0),
+  5) AS engagement_rate,
 
-  t.tab,                                  -- FORMAT axis
-  ps.playlist_title AS primary_subject,   -- SUBJECT axis
-  ps.n_playlists,
-  s.all_playlists
+  video_tabs.tab,                                         -- FORMAT axis
+  smallest_playlist_per_video.playlist_title AS primary_subject,   -- SUBJECT axis
+  smallest_playlist_per_video.n_playlists,
+  every_playlist_per_video.all_playlists
 
-FROM videos v
+FROM videos
 
-LEFT JOIN video_tabs t
-  ON t.video_id = v.video_id
+-- LEFT JOIN keeps every row from `videos` even when the right side has no
+-- match. A plain JOIN would silently drop the 815 videos with no playlist.
+LEFT JOIN video_tabs
+  ON video_tabs.video_id = videos.video_id
 
-LEFT JOIN primary_subject ps
-  ON ps.video_id = v.video_id
+LEFT JOIN smallest_playlist_per_video
+  ON smallest_playlist_per_video.video_id = videos.video_id
 
-LEFT JOIN all_subjects s
-  ON s.video_id = v.video_id
+LEFT JOIN every_playlist_per_video
+  ON every_playlist_per_video.video_id = videos.video_id
 
-ORDER BY v.published_at DESC;
+ORDER BY videos.published_at DESC;

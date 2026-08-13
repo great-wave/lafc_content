@@ -20,32 +20,35 @@
 --              .sort_values('median_views', ascending=False))
 
 SELECT
-  p.title       AS playlist_title,
-  p.item_count  AS playlist_size,
+  playlists.title       AS playlist_title,
+  playlists.item_count  AS playlist_size,
 
-  v.video_id,
-  v.title       AS video_title,
-  v.published_at,
-  v.view_count,
-  v.like_count,
-  v.comment_count,
+  videos.video_id,
+  videos.title          AS video_title,
+  videos.published_at,
+  videos.view_count,
+  videos.like_count,
+  videos.comment_count,
 
-  ROUND((v.like_count + v.comment_count) * 1.0 / NULLIF(v.view_count, 0), 5)
-    AS engagement_rate,
+  ROUND(
+    (videos.like_count + videos.comment_count) * 1.0
+      / NULLIF(videos.view_count, 0),
+  5) AS engagement_rate,
 
-  t.tab         -- lets you cut subject BY format: "Match Previews as a Short"
+  video_tabs.tab        -- lets you cut subject BY format: "Match Previews as a Short"
 
-FROM playlist_items pi
+FROM playlist_items
 
-JOIN playlists p
-  ON p.playlist_id = pi.playlist_id
+JOIN playlists
+  ON playlists.playlist_id = playlist_items.playlist_id
 
--- INNER JOIN on purpose: drops the ~100 playlist entries that point at videos
--- from other channels, which have no stats of ours to report.
-JOIN videos v
-  ON v.video_id = pi.video_id
+-- Plain JOIN on purpose, unlike video_labels.sql: this drops the ~100 playlist
+-- entries pointing at videos from OTHER channels, which have no stats of ours
+-- to report. That is why 3,482 memberships become 3,370 rows here.
+JOIN videos
+  ON videos.video_id = playlist_items.video_id
 
-LEFT JOIN video_tabs t
-  ON t.video_id = v.video_id
+LEFT JOIN video_tabs
+  ON video_tabs.video_id = videos.video_id
 
-ORDER BY p.title, v.published_at DESC;
+ORDER BY playlists.title, videos.published_at DESC;

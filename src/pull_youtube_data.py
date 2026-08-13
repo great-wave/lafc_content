@@ -12,7 +12,7 @@ WHAT GETS PULLED
     videos             one row per video, overwritten each pull
     playlists          the channel's PUBLIC playlists (private ones are invisible)
     playlist_items     which videos are in which playlists -- the SUBJECT label
-    video_tabs         short / longform / live -- the FORMAT label
+    video_tabs         short / horizontal / live -- the FORMAT label
 
 TWO LABEL AXES
     Subject and format are different questions and are stored separately. A
@@ -69,7 +69,14 @@ SESSION.mount(
 
 # Channel IDs start with "UC". Swapping that prefix gives the per-tab uploads
 # playlists. Undocumented but stable; verified against the /shorts/ URL probe.
-TAB_PREFIXES = {"UULF": "longform", "UUSH": "short", "UULV": "live"}
+#
+# NOTE ON NAMING: YouTube calls the UULF bucket "long form", but that describes
+# it badly -- 509 of those videos are under a minute and the shortest is 11
+# seconds. What actually separates a Short from the rest is ORIENTATION (Shorts
+# are vertical, served in the swipe feed), not length, so we call it
+# 'horizontal'. Live streams are horizontal too, but they are a distinct
+# surface, so they keep their own value.
+TAB_PREFIXES = {"UULF": "horizontal", "UUSH": "short", "UULV": "live"}
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_ROOT / "data" / "lafc_content.db"
@@ -125,7 +132,7 @@ CREATE INDEX IF NOT EXISTS idx_playlist_items_video
 
 CREATE TABLE IF NOT EXISTS video_tabs (
     video_id        TEXT PRIMARY KEY,
-    tab             TEXT NOT NULL,   -- 'short' | 'longform' | 'live'
+    tab             TEXT NOT NULL,   -- 'short' | 'horizontal' | 'live'
     fetched_at      TEXT NOT NULL
 );
 """
@@ -231,7 +238,7 @@ def fetch_playlist_memberships(api_key, playlists):
 
 def fetch_tabs(api_key, channel_id, all_video_ids):
     """
-    Map every video to its channel tab ('short' / 'longform' / 'live').
+    Map every video to its channel tab ('short' / 'horizontal' / 'live').
 
     Uses the undocumented per-tab uploads playlists (see module docstring). The
     three tabs should exactly reconstitute the uploads playlist; if they stop
@@ -300,7 +307,7 @@ def save_playlists(conn, channel_id, playlists, memberships, fetched_at):
 
 
 def save_tabs(conn, tabs, fetched_at):
-    """Write the short/longform/live label for each video."""
+    """Write the short/horizontal/live label for each video."""
     conn.executemany(
         "INSERT OR REPLACE INTO video_tabs (video_id, tab, fetched_at) VALUES (?, ?, ?)",
         [(video_id, tab, fetched_at) for video_id, tab in tabs.items()],
@@ -379,7 +386,7 @@ def main():
     print(f"Found {len(video_ids)} videos. Fetching stats...")
     videos = fetch_video_details(api_key, video_ids)
 
-    print("Collecting channel tabs (short / longform / live)...")
+    print("Collecting channel tabs (short / horizontal / live)...")
     tabs = fetch_tabs(api_key, channel_id, video_ids)
     counts = {tab: sum(1 for t in tabs.values() if t == tab) for tab in TAB_PREFIXES.values()}
     print(f"  {counts}")

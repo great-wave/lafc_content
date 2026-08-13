@@ -14,15 +14,15 @@
 -- the row count shrinks from ~3,482 to ~3,370.
 
 SELECT
-  pi.video_id,
-  pi.playlist_id,
-  p.title          AS playlist_title,
-  pi.position,                       -- order within the playlist (episode 1, 2, 3...)
-  p.item_count     AS playlist_size  -- used by the "most specific label" rule
+  playlist_items.video_id,
+  playlist_items.playlist_id,
+  playlists.title          AS playlist_title,
+  playlist_items.position,                       -- order within the playlist (episode 1, 2, 3...)
+  playlists.item_count     AS playlist_size  -- used by the "most specific label" rule
 
-FROM playlist_items pi
+FROM playlist_items
 
-JOIN playlists p
-  ON p.playlist_id = pi.playlist_id
+JOIN playlists
+  ON playlists.playlist_id = playlist_items.playlist_id
 
-ORDER BY p.title, pi.position;
+ORDER BY playlists.title, playlist_items.position;

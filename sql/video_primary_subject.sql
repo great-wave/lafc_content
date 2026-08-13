@@ -15,27 +15,39 @@
 -- Videos in no playlist are absent entirely; join with LEFT JOIN to keep them.
 
 SELECT
-  video_id,
-  playlist_title AS primary_subject,
-  n_playlists                    -- how many playlists this video is in
+  ranked_playlists.video_id,
+  ranked_playlists.playlist_title  AS primary_subject,
+  ranked_playlists.n_playlists                  -- how many playlists it is in
 
+-- A derived table (a query used as a table). It needs a name -- ranked_playlists
+-- -- because the outer query has to refer back to its columns.
 FROM (
+
   SELECT
-    pi.video_id,
-    p.title AS playlist_title,
+    playlist_items.video_id,
+    playlists.title AS playlist_title,
 
-    COUNT(*) OVER (PARTITION BY pi.video_id) AS n_playlists,
+    -- Window functions: split rows into groups by video_id and calculate
+    -- WITHIN each group, without collapsing the rows the way GROUP BY would.
 
-    -- Rank this video's playlists smallest-first; we keep rank 1.
+    -- How many playlists this video sits in. Every row for a given video
+    -- gets the same answer.
+    COUNT(*) OVER (PARTITION BY playlist_items.video_id) AS n_playlists,
+
+    -- Number this video's playlists 1, 2, 3... smallest playlist first.
     ROW_NUMBER() OVER (
-      PARTITION BY pi.video_id
-      ORDER BY p.item_count ASC, p.playlist_id ASC
+      PARTITION BY playlist_items.video_id
+      ORDER BY playlists.item_count ASC, playlists.playlist_id ASC
     ) AS rank_in_video
 
-  FROM playlist_items pi
+  FROM playlist_items
 
-  JOIN playlists p
-    ON p.playlist_id = pi.playlist_id
-)
+  JOIN playlists
+    ON playlists.playlist_id = playlist_items.playlist_id
 
-WHERE rank_in_video = 1;
+) AS ranked_playlists
+
+-- Keep only the smallest playlist for each video. This has to happen out here:
+-- WHERE runs before window functions are calculated, so rank_in_video does not
+-- exist yet inside the subquery above.
+WHERE ranked_playlists.rank_in_video = 1;
