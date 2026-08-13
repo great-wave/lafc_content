@@ -1,5 +1,10 @@
--- THE MAIN ANALYSIS TABLE: every video, with both label axes attached.
--- Exactly one row per video, so medians and counts are safe.
+-- ONE ROW PER VIDEO -- this is the main analysis table. Start here.
+--
+--   df = load_sql('video_labels')
+--   df['dur_min'] = pd.to_timedelta(df['duration']).dt.total_seconds() / 60
+--
+-- All 3,648 videos, one row each, so medians and counts are safe. Everything
+-- else is pandas from here.
 --
 -- TWO INDEPENDENT AXES
 --   tab             FORMAT  -- short / horizontal / live, from the channel's tabs
@@ -13,16 +18,23 @@
 --   tab             NULL if the tab prefixes ever stop covering the uploads
 --   primary_subject NULL for the ~22% of videos in no playlist (mostly Shorts)
 --
--- NOTE: `duration` is raw ISO-8601 ("PT1M30S"). Parse it in pandas:
---   df['dur_min'] = pd.to_timedelta(df['duration']).dt.total_seconds() / 60
+-- To compare playlists against each other instead, use playlist_performance.sql,
+-- which gives one row per membership so a video counts in every playlist it is in.
 
 
 -- WITH creates named temporary results (CTEs) that the main query below can
 -- treat as tables. They exist only for the life of this query.
 WITH smallest_playlist_per_video AS (
 
-  -- Mirrors sql/video_primary_subject.sql -- smallest playlist wins.
-  -- Duplicated rather than imported so this file runs standalone.
+  -- THE ONE JUDGMENT CALL IN THIS FILE.
+  -- 84% of playlisted videos are in exactly one playlist, so most need no
+  -- decision. For the other ~16% we keep the SMALLEST playlist, because a
+  -- niche playlist is a more informative label than a catch-all: a video in
+  -- both "Highlights" (770 videos) and "The Vela Vault" (27) is better
+  -- described as Vela content than as a highlight.
+  --
+  -- To change that rule, edit the ORDER BY below and every downstream cut
+  -- follows. This is the only place it is defined.
   SELECT
     ranked_playlists.video_id,
     ranked_playlists.playlist_title,

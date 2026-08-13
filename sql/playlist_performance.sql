@@ -1,27 +1,26 @@
--- PER-LABEL REPORTING: one row per (video, playlist), for grouping BY playlist.
+-- ONE ROW PER MEMBERSHIP -- use this to compare playlists against each other.
 --
--- Overlapping groups are fine here, because each group is answering its own
--- separate question ("among videos tagged Highlights, what is the median?").
--- A video in two playlists legitimately contributes to both answers.
+-- A video in three playlists appears three times, once for each. That is the
+-- point: it belongs to all three, so it should count in all three.
 --
--- THE RULE: never combine the groups. Their counts sum to MORE than the number
--- of videos (~3,370 rows over ~2,800 videos), so any total, share, or "% of
--- output" built from them is wrong. Report each playlist on its own line and
--- footnote the overlap.
+--   perf = load_sql('playlist_performance')
+--   perf.groupby('playlist_title')['view_count'].median()
 --
--- Medians are left to pandas -- SQLite has no MEDIAN(), and AVG() is misleading
--- on view counts, which are dominated by a handful of viral videos:
+-- THE ONE RULE: never add the groups together. Their counts sum to more than
+-- the number of videos (3,370 rows over ~2,800 videos), so any total, share or
+-- "% of output" built from them double-counts. Report each playlist on its own
+-- line and note the overlap.
 --
---   stats = (df.groupby('playlist_title')
---              .agg(n=('video_id', 'size'),
---                   median_views=('view_count', 'median'),
---                   median_eng=('engagement_rate', 'median'))
---              .query('n >= 20')
---              .sort_values('median_views', ascending=False))
+-- For anything per-video -- medians across the channel, timing, format --
+-- use video_labels.sql, which returns exactly one row per video.
+--
+-- Medians are left to pandas: SQLite has no MEDIAN(), and AVG() is misleading
+-- on view counts, which a handful of viral videos dominate.
 
 SELECT
   playlists.title       AS playlist_title,
-  playlists.item_count  AS playlist_size,
+  playlists.item_count  AS playlist_size,   -- how big the playlist is overall
+  playlist_items.position,                  -- order within it (episode 1, 2, 3...)
 
   videos.video_id,
   videos.title          AS video_title,
@@ -30,21 +29,24 @@ SELECT
   videos.like_count,
   videos.comment_count,
 
+  -- * 1.0 forces decimal division; without it SQLite would do integer division
+  -- and truncate everything to 0. NULLIF turns a zero view_count into NULL so
+  -- this returns NULL rather than erroring.
   ROUND(
     (videos.like_count + videos.comment_count) * 1.0
       / NULLIF(videos.view_count, 0),
   5) AS engagement_rate,
 
-  video_tabs.tab        -- lets you cut subject BY format: "Match Previews as a Short"
+  video_tabs.tab        -- lets you cut a playlist BY format: "Match Previews as a Short"
 
 FROM playlist_items
 
 JOIN playlists
   ON playlists.playlist_id = playlist_items.playlist_id
 
--- Plain JOIN on purpose, unlike video_labels.sql: this drops the ~100 playlist
--- entries pointing at videos from OTHER channels, which have no stats of ours
--- to report. That is why 3,482 memberships become 3,370 rows here.
+-- Plain JOIN on purpose: this drops the ~100 playlist entries pointing at
+-- videos from OTHER channels, which have no stats of ours to report. That is
+-- why 3,482 memberships come out as 3,370 rows.
 JOIN videos
   ON videos.video_id = playlist_items.video_id
 
