@@ -37,7 +37,7 @@ SELECT
       / NULLIF(videos.view_count, 0),
   5) AS engagement_rate,
 
-  video_tabs.tab        -- lets you cut a playlist BY format: "Match Previews as a Short"
+  video_formats.format        -- lets you cut a playlist BY format: "Match Previews as a Short"
 
 FROM playlist_items
 
@@ -50,7 +50,7 @@ JOIN playlists
 JOIN videos
   ON videos.video_id = playlist_items.video_id
 
-LEFT JOIN video_tabs
-  ON video_tabs.video_id = videos.video_id
+LEFT JOIN video_formats
+  ON video_formats.video_id = videos.video_id
 
 ORDER BY playlists.title, videos.published_at DESC;

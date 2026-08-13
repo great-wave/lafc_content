@@ -7,7 +7,7 @@
 -- else is pandas from here.
 --
 -- TWO INDEPENDENT AXES
---   tab             FORMAT  -- short / horizontal / live, from the channel's tabs
+--   format          FORMAT  -- short / horizontal / live, from the channel's tabs
 --   primary_subject SUBJECT -- what it is about, from its playlist
 --
 -- Keeping them separate is the point: a 40-second interview clip is both "an
@@ -15,7 +15,7 @@
 -- `social` became a catch-all.
 --
 -- Everything is LEFT JOINed, so all videos survive:
---   tab             NULL if the tab prefixes ever stop covering the uploads
+--   format          NULL if the tab prefixes ever stop covering the uploads
 --   primary_subject NULL for the ~22% of videos in no playlist (mostly Shorts)
 --
 -- To compare playlists against each other instead, use playlist_performance.sql,
@@ -91,7 +91,7 @@ SELECT
       / NULLIF(videos.view_count, 0),
   5) AS engagement_rate,
 
-  video_tabs.tab,                                         -- FORMAT axis
+  video_formats.format,                                         -- FORMAT axis
   smallest_playlist_per_video.playlist_title AS primary_subject,   -- SUBJECT axis
   smallest_playlist_per_video.n_playlists,
   every_playlist_per_video.all_playlists
@@ -100,8 +100,8 @@ FROM videos
 
 -- LEFT JOIN keeps every row from `videos` even when the right side has no
 -- match. A plain JOIN would silently drop the 815 videos with no playlist.
-LEFT JOIN video_tabs
-  ON video_tabs.video_id = videos.video_id
+LEFT JOIN video_formats
+  ON video_formats.video_id = videos.video_id
 
 LEFT JOIN smallest_playlist_per_video
   ON smallest_playlist_per_video.video_id = videos.video_id

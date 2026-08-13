@@ -1,5 +1,5 @@
 """
-Pulls channel, video, playlist and tab data for youtube.com/@LAFC using the
+Pulls channel, video, playlist and format data for youtube.com/@LAFC using the
 YouTube Data API v3, and saves everything into a local SQLite database.
 
 Usage:
@@ -12,12 +12,12 @@ WHAT GETS PULLED
     videos             one row per video, overwritten each pull
     playlists          the channel's PUBLIC playlists (private ones are invisible)
     playlist_items     which videos are in which playlists -- the SUBJECT label
-    video_tabs         short / horizontal / live -- the FORMAT label
+    video_formats      short / horizontal / live -- the FORMAT label
 
 TWO LABEL AXES
     Subject and format are different questions and are stored separately. A
     40-second interview clip is both "an interview" (subject, from its playlist)
-    and "a Short" (format, from its tab). Collapsing them into one column loses
+    and "a Short" (format, from its channel tab). Collapsing them into one column loses
     one of those facts.
 
     Subject is many-to-many: a video can sit in several playlists, so membership
@@ -30,7 +30,7 @@ DETECTING SHORTS
     only returned to the video's owner. Instead we use the per-tab uploads
     playlists: swapping the "UC" prefix of a channel ID for UULF / UUSH / UULV
     yields the Videos / Shorts / Live tabs. These prefixes are UNDOCUMENTED, so
-    fetch_tabs() asserts they still reconstitute the full uploads playlist and
+    fetch_formats() asserts they still reconstitute the full uploads playlist and
     warns loudly if they don't.
 
     Duration is not a usable substitute: on this channel it misclassifies ~15%
@@ -76,7 +76,7 @@ SESSION.mount(
 # are vertical, served in the swipe feed), not length, so we call it
 # 'horizontal'. Live streams are horizontal too, but they are a distinct
 # surface, so they keep their own value.
-TAB_PREFIXES = {"UULF": "horizontal", "UUSH": "short", "UULV": "live"}
+FORMAT_PREFIXES = {"UULF": "horizontal", "UUSH": "short", "UULV": "live"}
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_ROOT / "data" / "lafc_content.db"
@@ -130,9 +130,9 @@ CREATE TABLE IF NOT EXISTS playlist_items (
 CREATE INDEX IF NOT EXISTS idx_playlist_items_video
     ON playlist_items (video_id);
 
-CREATE TABLE IF NOT EXISTS video_tabs (
+CREATE TABLE IF NOT EXISTS video_formats (
     video_id        TEXT PRIMARY KEY,
-    tab             TEXT NOT NULL,   -- 'short' | 'horizontal' | 'live'
+    format          TEXT NOT NULL,   -- 'short' | 'horizontal' | 'live'
     fetched_at      TEXT NOT NULL
 );
 """
@@ -236,9 +236,11 @@ def fetch_playlist_memberships(api_key, playlists):
     return memberships
 
 
-def fetch_tabs(api_key, channel_id, all_video_ids):
+def fetch_formats(api_key, channel_id, all_video_ids):
     """
-    Map every video to its channel tab ('short' / 'horizontal' / 'live').
+    Map every video to its delivery format ('short' / 'horizontal' / 'live').
+
+    The values come from the channel's Videos / Shorts / Live tabs.
 
     Uses the undocumented per-tab uploads playlists (see module docstring). The
     three tabs should exactly reconstitute the uploads playlist; if they stop
@@ -246,20 +248,20 @@ def fetch_tabs(api_key, channel_id, all_video_ids):
     returning partial data.
     """
     suffix = channel_id[2:]  # strip the leading "UC"
-    tabs = {}
+    formats = {}
 
-    for prefix, tab in TAB_PREFIXES.items():
+    for prefix, video_format in FORMAT_PREFIXES.items():
         try:
             for video_id in fetch_playlist_video_ids(api_key, prefix + suffix):
-                tabs[video_id] = tab
+                formats[video_id] = video_format
         except requests.HTTPError as exc:
             print(f"  WARNING: tab playlist {prefix}* unavailable ({exc}) — skipping.")
 
-    missing = set(all_video_ids) - set(tabs)
+    missing = set(all_video_ids) - set(formats)
     if missing:
-        print(f"  WARNING: {len(missing)} of {len(all_video_ids)} uploads have no tab. "
+        print(f"  WARNING: {len(missing)} of {len(all_video_ids)} uploads have no format. "
               "The UULF/UUSH/UULV prefix scheme may have changed.")
-    return tabs
+    return formats
 
 
 def save_playlists(conn, channel_id, playlists, memberships, fetched_at):
@@ -306,15 +308,15 @@ def save_playlists(conn, channel_id, playlists, memberships, fetched_at):
         )
 
 
-def save_tabs(conn, tabs, fetched_at):
-    """Write the short/horizontal/live label for each video."""
+def save_formats(conn, formats, fetched_at):
+    """Write the short/horizontal/live format label for each video."""
     conn.executemany(
-        "INSERT OR REPLACE INTO video_tabs (video_id, tab, fetched_at) VALUES (?, ?, ?)",
-        [(video_id, tab, fetched_at) for video_id, tab in tabs.items()],
+        "INSERT OR REPLACE INTO video_formats (video_id, format, fetched_at) VALUES (?, ?, ?)",
+        [(video_id, video_format, fetched_at) for video_id, video_format in formats.items()],
     )
 
 
-def save_to_database(channel, videos, playlists, memberships, tabs, fetched_at):
+def save_to_database(channel, videos, playlists, memberships, formats, fetched_at):
     """Write every table for this pull, creating them if needed."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -366,7 +368,7 @@ def save_to_database(channel, videos, playlists, memberships, tabs, fetched_at):
         )
 
     save_playlists(conn, channel["id"], playlists, memberships, fetched_at)
-    save_tabs(conn, tabs, fetched_at)
+    save_formats(conn, formats, fetched_at)
 
     conn.commit()
     conn.close()
@@ -386,9 +388,9 @@ def main():
     print(f"Found {len(video_ids)} videos. Fetching stats...")
     videos = fetch_video_details(api_key, video_ids)
 
-    print("Collecting channel tabs (short / horizontal / live)...")
-    tabs = fetch_tabs(api_key, channel_id, video_ids)
-    counts = {tab: sum(1 for t in tabs.values() if t == tab) for tab in TAB_PREFIXES.values()}
+    print("Collecting video formats (short / horizontal / live)...")
+    formats = fetch_formats(api_key, channel_id, video_ids)
+    counts = {f: sum(1 for v in formats.values() if v == f) for f in FORMAT_PREFIXES.values()}
     print(f"  {counts}")
 
     print("Collecting playlists...")
@@ -397,9 +399,9 @@ def main():
     total_memberships = sum(len(v) for v in memberships.values())
     print(f"  {len(playlists)} playlists, {total_memberships} memberships.")
 
-    save_to_database(channel, videos, playlists, memberships, tabs, fetched_at)
+    save_to_database(channel, videos, playlists, memberships, formats, fetched_at)
     print(f"Saved {len(videos)} videos, {len(playlists)} playlists, "
-          f"{total_memberships} memberships and {len(tabs)} tab labels to {DB_PATH}")
+          f"{total_memberships} memberships and {len(formats)} format labels to {DB_PATH}")
 
 
 if __name__ == "__main__":
