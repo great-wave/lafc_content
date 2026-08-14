@@ -408,6 +408,58 @@ It alone was distorting the `show` group median before being separated out.
 
 ---
 
+### Finding 9 — `format` is a delivery surface, not a content category
+
+The three channel tabs (`UULF` → horizontal, `UUSH` → short, `UULV` → live) are
+**where YouTube puts a video**, not what kind of video it is. Two unrelated
+distinctions are collapsed into one column:
+
+| | n | median duration | median views | under 1 min |
+|---|---|---|---|---|
+| `short` | 539 | 0.4 min | **6,503** | 94% |
+| `horizontal` | 3,006 | 3.9 min | 1,518 | 17% |
+| `live` | 103 | **49.8 min** | 1,968 | 0% |
+
+- **`short` vs the rest is a distribution difference.** The vertical swipe feed
+  is a separate surface with its own discovery mechanics. This is the real axis,
+  and it is what Finding 3 is actually measuring.
+- **`live` vs `horizontal` is a delivery difference.** Both are long-form
+  horizontal video landing in the same feed; only the broadcast mode differs.
+
+**The proof is Inside LAFC.** 135 numbered episodes, and **no episode number
+appears under both formats** — this is a switchover, not duplication:
+
+| format | episodes | years |
+|--------|----------|-------|
+| horizontal | 78–148 (n=65) | 2023: 22, 2024: 42, 2025: 1 |
+| live | 144–214 (n=70) | 2025: 43, 2026: 27 |
+
+The podcast moved to live streaming around **episode 144 in early 2025**. Same
+show, same format, same length — a different tab. That is only possible because
+the tab describes delivery. It also explains the `live` bucket overall: 103
+videos, 76 of them since 2025, 69 of them podcast. `live` is largely one show.
+
+**How to use the axis:** treat format as **short vs long-form**, folding `live`
+into `horizontal`, unless the question is specifically about live-vs-VOD.
+Reporting three formats implies three content categories and invites the reading
+that "live does better than horizontal" — when the live bucket is mostly one
+podcast and the horizontal bucket is everything else on the channel.
+
+**Suggestive, not causal:** Inside LAFC's median went 744 views as horizontal →
+1,951 as live, a 2.6× lift on the same show. But the switch coincides with the
+channel's recovery from the 2024 era slump (Finding 5), so era and delivery move
+together. It is a clean natural experiment on a single show and deserves a
+proper look before anyone claims live streaming caused it.
+
+**Re-uploads are not a confound.** Only 4 titles appear under more than one
+format across the whole library, all `short`/`horizontal` pairs posted minutes
+apart — the same asset cut for both aspect ratios. The Short wins decisively in
+three of the four (8.1×, 3.5×, 4.6×), losing only on "A new era begins in Black
+& Gold." (131,677 vs 153,937). A tiny sample, but it points the same way as
+Finding 3.
+
+---
+
 ## Open questions & anomalies
 
 - **7–14 day loss anomaly:** videos 7–14 days after a loss have median 12,183
