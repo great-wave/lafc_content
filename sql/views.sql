@@ -4,9 +4,6 @@
 --
 --   sqlite3 data/lafc_content.db < sql/views.sql
 --
--- WHAT A VIEW IS. A saved query, not a saved table: it stores no rows and
--- re-runs every time it is referenced, so it always reflects the current data.
--- That is why the numbers here can never go stale the way a stored copy would.
 --
 -- WHY THESE EXIST. video_labels.sql, classified_videos_vs_lafc_match_context.sql
 -- and playlist_performance.sql all need the same logic, and SQL has no way for
