@@ -81,16 +81,16 @@ def add_subject(df):
 def register(mode="light"):
     """Install the palette as the default plotly template; return the colors.
 
-    Sets the histogram treatment too: a light fill with a full-contrast outline.
+    Sets the histogram treatment too, in gold to match the rest of the palette.
     A histogram is one series, so its color encodes nothing and should recede -
-    but a pale fill alone drops near 2:1 against the surface, and the outline is
-    what keeps each bin legible.
+    but a pale fill alone sits near 1.6:1 against the surface, and the outline
+    at ~6:1 is what keeps each bin legible.
     """
     import plotly.graph_objects as go
     import plotly.io as pio
 
     colors = subject_colors(mode)
-    fill, line = ("#9EC5F4", "#2A78D6") if mode == "light" else ("#1C5CAB", "#86B6EF")
+    fill, line = ("#DCC8A2", "#785C33") if mode == "light" else ("#4A3A22", "#B08F5C")
 
     pio.templates["lafc"] = go.layout.Template(
         layout=dict(colorway=list(colors.values()), bargap=0.02),
