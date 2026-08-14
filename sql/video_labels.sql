@@ -1,7 +1,4 @@
 -- ONE ROW PER VIDEO -- this is the main analysis table.
---
-
---
 -- All videos - one row each, so medians and counts are safe.
 --
 --   format          FORMAT  -- short / horizontal / live, from the channel's tabs
