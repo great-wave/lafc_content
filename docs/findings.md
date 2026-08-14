@@ -166,7 +166,7 @@ next match than the previous one. By old bin: `4–7 days` was **79.9%** pre-mat
 content, `30+` was 71.9%, `2–3` and `8–14` about 50% each. Only `0–1` meant what
 its label said.
 
-**Fix:** `sql/classified_videos_vs_lafc_match_context.sql` now also returns
+**Fix:** `sql/videos_vs_lafc_match_context.sql` now also returns
 `days_until_match` (mirrored subquery, `MIN(kickoff_utc) > published_at`).
 Downstream, a signed `days_from_match` takes the *nearer* of the two — negative
 means published before a kickoff. Videos more than 21 days from a match in both
@@ -269,6 +269,145 @@ so `dur_min < 1` misclassifies.
 
 ---
 
+### Finding 7 — The title classifier is retired; it reads topic, not format
+
+**Decision (2026-08-14): stop using the classifier as a label source.**
+`ml_label` / `ml_score` stay in `classified_videos` as a diagnostic, but
+`content_type` should no longer promote them.
+
+**What it actually classifies.** On serialized shows the title is boilerplate
+plus a topic phrase, and the model classifies the phrase — returning the
+*subject under discussion* as the *format of the video*. All four of these are
+episodes of one weekly show:
+
+| Title | `ml_label` |
+|-------|------------|
+| Inside LAFC \| Episode 212 – Off to a hot start | `match_preview` |
+| Inside LAFC \| Episode 210 – MLS Is Back | `recap` |
+| Inside LAFC \| Episode 214 – Leagues Cup | `highlights` |
+| Inside LAFC Ep. 139 – Lewis O'Brien | `presser` |
+
+Inside LAFC (n=226) splits across **9 labels**; the largest is `presser` at 39%.
+
+**Confidence is anti-correlated with correctness — so no threshold can fix it.**
+602 videos (16.5% of the library) carry serialized titles, and the model is
+*more* confident on them than on everything else:
+
+| Segment | n | Median `ml_score` | Below 0.36 |
+|---------|---|-------------------|------------|
+| Serialized titles | 602 | 0.519 | 15.9% |
+| Everything else | 3,046 | 0.472 | 22.0% |
+
+The 0.36 cut therefore *preferentially keeps* the bad labels: ~506 of the 602
+clear it, about **18% of all non-null `content_type`**. Raising the threshold
+makes this worse, shedding coverage where the classifier works while retaining
+the errors where it does not. Affected series: Inside LAFC (203), LAFC+ (106),
+LAFC Weekly (82), Acción LAFC (73), Black & Gold Insider (59), In Touch With
+Steve Cherundolo (25).
+
+**Why earlier validation missed it.** The sweep in `classification_v03.ipynb`
+ran against five *content-type* playlists (Match Previews, Interviews,
+Highlights, Full Matches, Anatomy of a Goal). Every *series* playlist was
+excluded, so 78% precision describes only the segment where the classifier
+works. Note also that its coverage figures are within the validation subset,
+while the coverage numbers quoted in `sql/videos_vs_lafc_match_context.sql`
+are library-wide (0.36 → 79%, 0.40 → 71%, 0.44 → 62%) — both correct, different
+denominators.
+
+**The structural problem.** Playlists already cover 78% of the library, so the
+classifier's only real territory is the uncovered 815 — which is where it is
+weakest:
+
+| | Uncovered (815) | Covered (2,833) |
+|---|---|---|
+| Shorts | 462 (57%) | — |
+| Median title length | 7.0 words | 8.8 words |
+| Median `ml_score` | 0.429 | 0.497 |
+| Below 0.36 | 33% | 17% |
+
+It overrides playlists where they know the answer, and struggles where nothing
+else can help. The information is not in the string: "Episode 210 – MLS Is Back"
+does not contain the fact that it is a weekly roundup show, so retraining on
+titles alone cannot recover it.
+
+**Replacement:** subject from playlist membership, format from the Shorts probe
+(Finding 6). Series playlists get one content-type decision per show (~15
+decisions) rather than one guess per episode. Strip Shorts and series from the
+uncovered set and roughly **329 horizontal videos** remain with no label source
+— small enough to hand-label once, permanently, rather than model.
+
+**Affects:** any cut sliced by `content_type`. Findings 1–5 use `format`,
+`days_from_match`, and `format_family`, none of which depend on the classifier.
+
+---
+
+### Finding 8 — Playlist mapping replaces the classifier; it is a long-form label system
+
+The classifier's replacement is `data/playlist_types.csv` — **56 hand-authored
+rows**, one per playlist, mapping `playlist_title → content_type`. The mapping is
+applied at query time, so new videos inherit a label the moment they join a
+playlist; nothing needs re-running. 56 decisions replace 3,648 guesses.
+
+**Coverage: 2,503 videos (69%) receive a real content type.** The remainder is
+330 in playlists deliberately marked `unclassified` (themes whose videos span
+formats — BMO Stadium, Major News, Adventures in the U.S. Open Cup) and 815 with
+no playlist at all.
+
+| content_type | videos | median views |
+|--------------|--------|--------------|
+| `highlights` | 708 | **3,705** |
+| `podcast` | 507 | 720 |
+| `press_interview` | 404 | 613 |
+| `show` | 369 | 1,242 |
+| `feature` | 277 | 1,657 |
+| `community` | 150 | 1,325 |
+| `match_preview` | 79 | 1,412 |
+| `full_match` | 9 | 352 |
+
+**Only `highlights` beats the channel median** of 1,918 — everything else sits at
+or below it. Treat that ordering as descriptive, not causal: format is a
+confound, since `highlights` is Shorts-heavy and Finding 3 already establishes
+short-form as the reach engine. The cut worth running is content type *within*
+duration class.
+
+**This is a long-form labelling system, and that is a structural limit.**
+Playlist filing is a deliberate curation step that Shorts largely skip:
+
+| format | total | unfiled | % unfiled |
+|--------|-------|---------|-----------|
+| short | 539 | 462 | **85.7%** |
+| live | 103 | 24 | 23.3% |
+| horizontal | 3,006 | 329 | 10.9% |
+
+Any cut by `content_type` is therefore mostly a statement about long-form. Note
+this has degraded sharply since Finding 6 measured 51% Shorts coverage — now
+14% — so Shorts volume is outgrowing anyone's filing of it. The Shorts probe is
+the higher-value work; further classification effort is not.
+
+**Most playlists are dormant.** `status = active` means **at least one video
+published in 2025 or later**; `dormant` means the most recent video predates
+2025. The cutoff is set to match Finding 5's recommended 2025+ analysis window,
+not chosen independently. On that rule 38 of 56 playlists are dormant (701
+videos) and 18 are active (2,132), so decisions on dormant playlists are
+low-stakes. The bar is deliberately loose — as of Aug 2026 it means "active
+within ~20 months," and Community & Culture qualifies on a single video. Stricter
+alternatives: 2026+ gives 13 active / 43 dormant; 2024+ gives 28 / 28.
+
+**Vocabulary notes.** `show` and `podcast` are separate values and the
+distinction is real: `show` is a produced episodic program, `podcast` a
+conversation format. All 226 Inside LAFC videos are podcast — the apparent split
+between `| Episode N` and `Ep. N` titles is a naming-convention change over
+time, not two series. `goal_clip` and `match_recap` were folded into
+`highlights` (same job; match recaps are a 3.0-min cut against 1.1-min
+highlights, with near-identical views).
+
+**Anomaly worth its own look: The Son Spotlight.** 69 videos, all published
+2025+, median **84,187 views** — 44× the channel median and the highest-performing
+playlist in the library by a wide margin. Not a show but a player compilation.
+It alone was distorting the `show` group median before being separated out.
+
+---
+
 ## Open questions & anomalies
 
 - **7–14 day loss anomaly:** videos 7–14 days after a loss have median 12,183
@@ -282,19 +421,25 @@ so `dur_min < 1` misclassifies.
   **[Addressed by Finding 6 — split subject (playlists) from format (Shorts
   probe). Implementation still open.]**
 
-### Next steps (as of 2026-08-12)
+### Next steps (as of 2026-08-14)
 
-1. Add `playlists` / `playlist_items` tables to `src/pull_youtube_data.py`.
-   `fetch_playlist_items` is the existing `fetch_all_video_ids` with the
-   playlist ID parameterized. Membership snapshot already pulled to
-   `data/playlist_items.csv`.
+1. ~~Add `playlists` / `playlist_items` tables to `src/pull_youtube_data.py`.~~
+   **Done** — both tables are populated, and `sql/views.sql` derives
+   `smallest_playlist_per_video` / `every_playlist_per_video` from them.
 2. Rework classification: subject from playlists, format from the Shorts probe.
-   Validate the keyword classifier against the 2,785 playlist-labeled videos.
-3. Re-run the match-cycle chart faceted by `format_family` to separate the
+   The classifier is retired as a label source (Finding 7) — no further
+   validation of it is planned. Remaining work is the ~15 per-show content-type
+   decisions for series playlists, and a one-time hand-label of the ~329
+   horizontal videos with no playlist.
+3. **Blocker:** `format_family` does not exist in the query output — the columns
+   are `format`, `content_type`, `ml_label`, `playlist`. Cells in
+   `exploration.ipynb` keyed to it raise `KeyError`. Decide its replacement
+   (`subject`, or a rebuilt family mapping) before the cuts below.
+4. Re-run the match-cycle chart faceted by format family to separate the
    timing effect from the composition effect (Finding 4 caveat).
-4. Revisit Finding 1's regression using signed `days_from_match` and an
+5. Revisit Finding 1's regression using signed `days_from_match` and an
    `is_matchday × result` interaction.
-5. Decide the analysis window — 2025+ recommended (Finding 5).
+6. Decide the analysis window — 2025+ recommended (Finding 5).
 
 ---
 

@@ -2,17 +2,13 @@
 -- that references the views below. src/pull_youtube_data.py runs it
 -- automatically at the end of every pull, so a rebuilt database always has them.
 --
---   sqlite3 data/lafc_content.db < sql/views.sql
---
---
--- WHY THESE EXIST. video_labels.sql, classified_videos_vs_lafc_match_context.sql
+-- WHY THESE EXIST. video_labels.sql, videos_vs_lafc_match_context.sql
 -- and playlist_performance.sql all need the same logic, and SQL has no way for
 -- one file to import another. Before this file existed the logic was
 -- copy-pasted into each one, which meant a single rule had several definitions
 -- that had to be kept in sync by hand.
 --
 -- Each view is dropped first, so this file is safe to re-run.
-
 
 -- ---------------------------------------------------------------------------
 -- videos_with_engagement -- every column of `videos`, plus engagement_rate.
@@ -56,7 +52,6 @@ CREATE VIEW videos_with_engagement AS
 -- ---------------------------------------------------------------------------
 -- smallest_playlist_per_video -- the one playlist used as a video's SUBJECT label.
 --
--- THE ONE JUDGMENT CALL IN THE PROJECT.
 -- 84% of playlisted videos are in exactly one playlist, so most need no
 -- decision. For the other ~16% we keep the SMALLEST playlist, because a niche
 -- playlist is a more informative label than a catch-all: a video in both

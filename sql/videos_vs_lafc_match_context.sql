@@ -1,17 +1,14 @@
 -- THE FULL ANALYSIS TABLE: every video, all three label axes, plus the match
 -- context around it. One row per video.
 --
--- Every stat is live. Nothing here is a stored copy -- the only thing read from
--- a derived table is the classifier's output (ml_label / ml_score), because
--- that is genuinely expensive to recompute. View counts, engagement rate,
--- playlist and format are all derived fresh (views compute on read, they do not
--- store rows), so re-running src/pull_youtube_data.py is immediately reflected
--- here.
+-- Every stat is live. Nothing here is a stored copy -- view counts, engagement
+-- rate, playlist, format and content type are all derived on read, so re-running
+-- src/pull_youtube_data.py is immediately reflected here.
 --
 -- THREE LABEL AXES
 --   format        short / horizontal / live -- how it is delivered
---   playlist      which LAFC playlist it is filed under (NULL for ~21%)
---   content_type  what kind of video it is  -- from the classifier, thresholded below
+--   playlist      which LAFC playlist it is filed under (NULL for ~22%)
+--   content_type  what kind of video it is  -- from the playlist mapping below
 --
 -- MATCH CONTEXT
 --   days_since_match gap back to the previous kickoff
@@ -32,6 +29,9 @@
 -- only there, so this file and video_labels.sql cannot drift apart on them.
 --
 --   sqlite3 data/lafc_content.db < sql/views.sql
+--
+-- ALSO REQUIRES the playlist_types table, loaded from data/playlist_types.csv
+-- by src/pull_youtube_data.py. Edit the CSV, re-run the pull, done.
 
 
 SELECT
@@ -48,35 +48,31 @@ SELECT
   -- files share one definition. NULL when a video has no views.
   videos_with_engagement.engagement_rate,
 
-  video_formats.format,                                        -- FORMAT axis
+  video_formats.format,                                       -- FORMAT axis
   smallest_playlist_per_video.playlist_title AS playlist,     -- SUBJECT axis
   smallest_playlist_per_video.n_playlists,
   every_playlist_per_video.all_playlists,
 
-  -- CONTENT TYPE axis, from the sentence-transformer classifier.
+  -- CONTENT TYPE axis, from data/playlist_types.csv -- 56 hand-authored rows,
+  -- one per playlist, joined through whichever playlist labelled the video.
   --
-  -- THE THRESHOLD IS A JUDGMENT CALL, so it lives here rather than in the
-  -- table -- changing it is one number and a re-run of this query, with no
-  -- need to re-encode 3,648 titles.
+  -- This replaced a sentence-transformer classifier that read the title. On
+  -- serialized shows the title is boilerplate plus a topic phrase, so the model
+  -- classified the topic and returned it as the format -- four episodes of one
+  -- podcast came back as match_preview, recap, highlights and presser. Worse,
+  -- it was MORE confident on those (median score 0.519 vs 0.472 elsewhere), so
+  -- no threshold could filter them out. See Finding 7 in docs/findings.md.
   --
-  -- Swept against the playlist labels, precision is nearly flat from 0.30 to
-  -- 0.38 (76% -> 78%) and only climbs above it, so below 0.38 the score is
-  -- barely discriminating and the coverage is close to free:
+  -- A human filing a video into a playlist knows what a title cannot say.
   --
-  --     0.36   78% precision   79% coverage    <- chosen
-  --     0.40   80% precision   71% coverage
-  --     0.44   83% precision   62% coverage
-  --
-  -- 0.36 favours coverage because these labels are for comparing medians over
-  -- hundreds of videos, where a little noise costs less than losing a fifth of
-  -- the library. Below it we return NULL -- an honest "we don't know".
-  
-  CASE
-    WHEN classified_videos.ml_score >= 0.36 THEN classified_videos.ml_label
-  END AS content_type,
-
-  classified_videos.ml_label,   -- raw guess, so you can see what fell below
-  classified_videos.ml_score,
+  -- Three values are load-bearing and deliberate:
+  --   'unclassified'  the playlist is a theme whose videos span formats
+  --                   (BMO Stadium, Major News) -- an answer, not a gap
+  --   NULL            no playlist at all, so nothing to look up. 815 videos,
+  --                   86% of Shorts -- this is a LONG-FORM label system
+  --   status column   'active'/'dormant' in the CSV; 38 of 56 playlists have
+  --                   published nothing since 2025 and are low-stakes
+  playlist_types.content_type,
 
   lafc_match_context.season,
   lafc_match_context.kickoff_utc,
@@ -116,7 +112,7 @@ SELECT
 FROM videos_with_engagement
 
 -- All LEFT JOINs: every video survives even with no format, no playlist, no
--- classifier output, or no preceding match.
+-- content type, or no preceding match.
 LEFT JOIN video_formats
   ON video_formats.video_id = videos_with_engagement.video_id
 
@@ -126,8 +122,12 @@ LEFT JOIN smallest_playlist_per_video
 LEFT JOIN every_playlist_per_video
   ON every_playlist_per_video.video_id = videos_with_engagement.video_id
 
-LEFT JOIN classified_videos
-  ON classified_videos.video_id = videos_with_engagement.video_id
+-- The content type comes from the playlist, so the join hangs off the labelling
+-- view rather than the video: one lookup per playlist, applied to every video
+-- filed under it. A video added to a playlist tomorrow inherits its type with
+-- no re-run of anything.
+LEFT JOIN playlist_types
+  ON playlist_types.playlist_title = smallest_playlist_per_video.playlist_title
 
 LEFT JOIN lafc_match_context
   ON lafc_match_context.kickoff_utc = (

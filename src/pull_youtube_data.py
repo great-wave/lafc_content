@@ -37,6 +37,7 @@ DETECTING SHORTS
     of videos, and roughly half of everything under a minute is not a Short.
 """
 
+import csv
 import os
 import sqlite3
 import sys
@@ -84,6 +85,10 @@ DB_PATH = PROJECT_ROOT / "data" / "lafc_content.db"
 # Shared views the analysis queries join to. Read from the .sql file rather than
 # repeated here, so the smallest-playlist rule has exactly one definition.
 VIEWS_PATH = PROJECT_ROOT / "sql" / "views.sql"
+
+# playlist -> content_type, hand-authored. The CSV is the source of truth and is
+# tracked in git; the table below is only how SQL gets to read it.
+PLAYLIST_TYPES_PATH = PROJECT_ROOT / "data" / "playlist_types.csv"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS channel_snapshots (
@@ -320,6 +325,39 @@ def save_formats(conn, formats, fetched_at):
     )
 
 
+def load_playlist_types(conn):
+    """Load data/playlist_types.csv into the playlist_types table.
+
+    This is the CONTENT TYPE label: 56 hand-authored rows, one per playlist,
+    which the analysis query joins through whichever playlist labelled a video.
+    It replaced a title classifier that read the topic of a video rather than
+    its format (Finding 7 in docs/findings.md).
+
+    The table is dropped and rewritten so the CSV is unambiguously the source of
+    truth -- editing a row and re-running the pull is the whole update path, and
+    a row deleted from the CSV disappears here too.
+    """
+    with open(PLAYLIST_TYPES_PATH, newline="", encoding="utf-8") as f:
+        rows = [
+            (r["playlist_title"], r["content_type"], r.get("kind"), r.get("status"))
+            for r in csv.DictReader(f)
+        ]
+
+    conn.execute("DROP TABLE IF EXISTS playlist_types")
+    conn.execute(
+        """
+        CREATE TABLE playlist_types (
+            playlist_title TEXT PRIMARY KEY,
+            content_type   TEXT,
+            kind           TEXT,
+            status         TEXT
+        )
+        """
+    )
+    conn.executemany("INSERT INTO playlist_types VALUES (?, ?, ?, ?)", rows)
+    return len(rows)
+
+
 def create_views(conn):
     """(Re)create the shared views from sql/views.sql.
 
@@ -383,6 +421,7 @@ def save_to_database(channel, videos, playlists, memberships, formats, fetched_a
 
     save_playlists(conn, channel["id"], playlists, memberships, fetched_at)
     save_formats(conn, formats, fetched_at)
+    load_playlist_types(conn)
     create_views(conn)
 
     conn.commit()
