@@ -81,6 +81,10 @@ FORMAT_PREFIXES = {"UULF": "horizontal", "UUSH": "short", "UULV": "live"}
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_ROOT / "data" / "lafc_content.db"
 
+# Shared views the analysis queries join to. Read from the .sql file rather than
+# repeated here, so the smallest-playlist rule has exactly one definition.
+VIEWS_PATH = PROJECT_ROOT / "sql" / "views.sql"
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS channel_snapshots (
     channel_id      TEXT NOT NULL,
@@ -316,6 +320,16 @@ def save_formats(conn, formats, fetched_at):
     )
 
 
+def create_views(conn):
+    """(Re)create the shared views from sql/views.sql.
+
+    Views store no rows, so rebuilding them is free and they always reflect the
+    playlist data we just wrote. The file drops each view before creating it,
+    which makes this safe to run on every pull.
+    """
+    conn.executescript(VIEWS_PATH.read_text())
+
+
 def save_to_database(channel, videos, playlists, memberships, formats, fetched_at):
     """Write every table for this pull, creating them if needed."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -369,6 +383,7 @@ def save_to_database(channel, videos, playlists, memberships, formats, fetched_a
 
     save_playlists(conn, channel["id"], playlists, memberships, fetched_at)
     save_formats(conn, formats, fetched_at)
+    create_views(conn)
 
     conn.commit()
     conn.close()

@@ -1,11 +1,12 @@
 -- THE FULL ANALYSIS TABLE: every video, all three label axes, plus the match
 -- context around it. One row per video.
 --
--- Starts FROM videos so every stat is live. Nothing here is a stored copy --
--- the only thing read from a derived table is the classifier's output
--- (ml_label / ml_score), because that is genuinely expensive to recompute.
--- View counts, engagement rate, playlist and format are all derived fresh, so
--- re-running src/pull_youtube_data.py is immediately reflected here.
+-- Every stat is live. Nothing here is a stored copy -- the only thing read from
+-- a derived table is the classifier's output (ml_label / ml_score), because
+-- that is genuinely expensive to recompute. View counts, engagement rate,
+-- playlist and format are all derived fresh (views compute on read, they do not
+-- store rows), so re-running src/pull_youtube_data.py is immediately reflected
+-- here.
 --
 -- THREE LABEL AXES
 --   format        short / horizontal / live -- how it is delivered
@@ -20,68 +21,35 @@
 -- upcoming fixture. Downstream, take whichever is smaller and give it a sign.
 
 
-WITH smallest_playlist_per_video AS (
-
-  -- Mirrors sql/video_labels.sql -- smallest playlist wins, because a niche
-  -- playlist is a more informative label than a catch-all. Duplicated rather
-  -- than imported so this file runs standalone; if you change the rule, change
-  -- it in both places.
-
-  SELECT
-    ranked_playlists.video_id,
-    ranked_playlists.playlist_title,
-    ranked_playlists.n_playlists
-
-  FROM (
-    SELECT
-      playlist_items.video_id,
-      playlists.title AS playlist_title,
-      COUNT(*) OVER (PARTITION BY playlist_items.video_id) AS n_playlists,
-      ROW_NUMBER() OVER (
-        PARTITION BY playlist_items.video_id
-        ORDER BY playlists.item_count ASC, playlists.playlist_id ASC
-      ) AS rank_in_video
-    FROM playlist_items
-    JOIN playlists
-      ON playlists.playlist_id = playlist_items.playlist_id
-  ) AS ranked_playlists
-
-  WHERE ranked_playlists.rank_in_video = 1
-),
-
-every_playlist_per_video AS (
-
-  -- Every playlist a video is in, flattened to one string, so the labels the
-  -- smallest-playlist rule discarded are still visible.
-  SELECT
-    playlist_items.video_id,
-    GROUP_CONCAT(playlists.title, ' | ') AS all_playlists
-  FROM playlist_items
-  JOIN playlists
-    ON playlists.playlist_id = playlist_items.playlist_id
-  GROUP BY playlist_items.video_id
-)
+-- REQUIRES sql/views.sql, which defines the three views this query reads:
+--
+--   videos_with_engagement       the videos table plus engagement_rate
+--   smallest_playlist_per_video  one playlist per video (the labelling rule)
+--   every_playlist_per_video     all of its playlists, as one string
+--
+-- The last two collapse the many-to-many playlist_items down to one row per
+-- video before it is joined here. All three definitions live in views.sql and
+-- only there, so this file and video_labels.sql cannot drift apart on them.
+--
+--   sqlite3 data/lafc_content.db < sql/views.sql
 
 
 SELECT
-  videos.video_id,
-  videos.title,
-  videos.description,
-  videos.published_at,
-  videos.duration,
-  videos.view_count,
-  videos.like_count,
-  videos.comment_count,
+  videos_with_engagement.video_id,
+  videos_with_engagement.title,
+  videos_with_engagement.description,
+  videos_with_engagement.published_at,
+  videos_with_engagement.duration,
+  videos_with_engagement.view_count,
+  videos_with_engagement.like_count,
+  videos_with_engagement.comment_count,
 
-  -- * 1.0 forces decimal division; NULLIF turns a zero view_count into NULL so
-  -- this returns NULL rather than erroring.
-  ROUND(
-    (videos.like_count + videos.comment_count) * 1.0
-      / NULLIF(videos.view_count, 0),
-  5) AS engagement_rate,
+  -- (likes + comments) / views, computed in sql/views.sql so all three query
+  -- files share one definition. NULL when a video has no views.
+  videos_with_engagement.engagement_rate,
 
   video_formats.format,                                        -- FORMAT axis
-  smallest_playlist_per_video.playlist_title AS playlist,       -- SUBJECT axis
+  smallest_playlist_per_video.playlist_title AS playlist,     -- SUBJECT axis
   smallest_playlist_per_video.n_playlists,
   every_playlist_per_video.all_playlists,
 
@@ -131,7 +99,7 @@ SELECT
   -- Whole-day gap between kickoff and publish. julianday() converts each
   -- timestamp to a day-number, so subtracting gives a difference in days.
   ROUND(
-    julianday(videos.published_at) - julianday(lafc_match_context.kickoff_utc),
+    julianday(videos_with_engagement.published_at) - julianday(lafc_match_context.kickoff_utc),
   2) AS days_since_match,
 
   -- Whole-day gap to the NEXT kickoff after the video. Mirrors the join below,
@@ -141,32 +109,32 @@ SELECT
     julianday((
       SELECT MIN(kickoff_utc)
       FROM lafc_match_context
-      WHERE kickoff_utc > videos.published_at
-    )) - julianday(videos.published_at),
+      WHERE kickoff_utc > videos_with_engagement.published_at
+    )) - julianday(videos_with_engagement.published_at),
   2) AS days_until_match
 
-FROM videos
+FROM videos_with_engagement
 
 -- All LEFT JOINs: every video survives even with no format, no playlist, no
 -- classifier output, or no preceding match.
 LEFT JOIN video_formats
-  ON video_formats.video_id = videos.video_id
+  ON video_formats.video_id = videos_with_engagement.video_id
 
 LEFT JOIN smallest_playlist_per_video
-  ON smallest_playlist_per_video.video_id = videos.video_id
+  ON smallest_playlist_per_video.video_id = videos_with_engagement.video_id
 
 LEFT JOIN every_playlist_per_video
-  ON every_playlist_per_video.video_id = videos.video_id
+  ON every_playlist_per_video.video_id = videos_with_engagement.video_id
 
 LEFT JOIN classified_videos
-  ON classified_videos.video_id = videos.video_id
+  ON classified_videos.video_id = videos_with_engagement.video_id
 
 LEFT JOIN lafc_match_context
   ON lafc_match_context.kickoff_utc = (
        -- For this video, the latest kickoff that is still at/before it:
        SELECT MAX(kickoff_utc)
        FROM lafc_match_context
-       WHERE kickoff_utc <= videos.published_at
+       WHERE kickoff_utc <= videos_with_engagement.published_at
      )
 
-ORDER BY videos.published_at DESC;
+ORDER BY videos_with_engagement.published_at DESC;

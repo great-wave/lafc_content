@@ -1,106 +1,58 @@
--- ONE ROW PER VIDEO -- this is the main analysis table.
--- All videos - one row each, so medians and counts are safe.
---
---   format          FORMAT  -- short / horizontal / live, from the channel's tabs
---   playlist        SUBJECT -- which LAFC playlist it is filed under
---
+-- This SQL query joins data from the video table with data from the playlists table.
+-- If a video exists in multiple playlists, it choooses the playlist with the smallest
+-- number of videos. That way, each video shows up only once in the table.
+
 -- Everything is LEFT JOINed, so all videos survive:
 --   format          NULL if the tab prefixes ever stop covering the uploads
 --   playlist        NULL for the ~22% of videos in no playlist (mostly Shorts)
---
+
 -- To compare playlists against each other instead, use playlist_performance.sql,
 -- which gives one row per membership so a video counts in every playlist it is in.
 
-
--- WITH creates named temporary results (CTEs) that the main query below can
--- treat as tables. They exist only for the life of this query.
-
-WITH smallest_playlist_per_video AS (
-
-  -- THE ONE JUDGMENT CALL IN THIS FILE.
-  -- 84% of playlisted videos are in exactly one playlist, so most need no
-  -- decision. For the other ~16% we keep the SMALLEST playlist, because a
-  -- niche playlist is a more informative label than a catch-all: a video in
-  -- both "Highlights" (770 videos) and "The Vela Vault" (27) is better
-  -- described as Vela content than as a highlight.
-  --
-  -- To change that rule, edit the ORDER BY below and every downstream cut
-  -- follows. This is the only place it is defined.
-
-  SELECT
-    ranked_playlists.video_id,
-    ranked_playlists.playlist_title,
-    ranked_playlists.n_playlists
-
-  FROM (
-    SELECT
-      playlist_items.video_id,
-      playlists.title AS playlist_title,
-      COUNT(*) OVER (PARTITION BY playlist_items.video_id) AS n_playlists,
-      ROW_NUMBER() OVER (
-        PARTITION BY playlist_items.video_id
-        ORDER BY playlists.item_count ASC, playlists.playlist_id ASC
-      ) AS rank_in_video
-    FROM playlist_items
-    JOIN playlists
-      ON playlists.playlist_id = playlist_items.playlist_id
-  ) AS ranked_playlists
-
-  WHERE ranked_playlists.rank_in_video = 1
-),
-
-every_playlist_per_video AS (
-
-  -- Every playlist a video belongs to, flattened into one string. Keeps the
-  -- labels the smallest-playlist rule discarded, without multiplying rows.
-  SELECT
-    playlist_items.video_id,
-    GROUP_CONCAT(playlists.title, ' | ') AS all_playlists
-
-  FROM playlist_items
-
-  JOIN playlists
-    ON playlists.playlist_id = playlist_items.playlist_id
-
-  GROUP BY playlist_items.video_id
-)
-
+-- REQUIRES sql/views.sql, which defines the three views this query reads:
+--
+--   videos_with_engagement       the videos table plus engagement_rate
+--   smallest_playlist_per_video  one playlist per video (the labelling rule)
+--   every_playlist_per_video     all of its playlists, as one string
+--
+-- The last two collapse the many-to-many playlist_items down to one row per
+-- video before it is joined here -- without that, a video in three playlists
+-- would come back three times. All three definitions live in views.sql and
+-- only there, so this file and the other queries cannot drift apart.
+--
+--   sqlite3 data/lafc_content.db < sql/views.sql
 
 SELECT
-  videos.video_id,
-  videos.title,
-  videos.description,
-  videos.published_at,
-  videos.duration,
-  videos.view_count,
-  videos.like_count,
-  videos.comment_count,
+  videos_with_engagement.video_id,
+  videos_with_engagement.title,
+  videos_with_engagement.description,
+  videos_with_engagement.published_at,
+  videos_with_engagement.duration,
+  videos_with_engagement.view_count,
+  videos_with_engagement.like_count,
+  videos_with_engagement.comment_count,
 
-  -- NULLIF turns a zero view_count into NULL, so this returns NULL instead of
-  -- raising a division-by-zero error.
-
-  ROUND(
-    (videos.like_count + videos.comment_count) * 1.0
-      / NULLIF(videos.view_count, 0),
-  5) AS engagement_rate,
+  -- (likes + comments) / views, computed in sql/views.sql so all three query
+  -- files share one definition. NULL when a video has no views.
+  videos_with_engagement.engagement_rate,
 
   video_formats.format,                                         -- FORMAT axis
-  smallest_playlist_per_video.playlist_title AS playlist,          -- SUBJECT axis
+  smallest_playlist_per_video.playlist_title AS playlist,        -- SUBJECT axis
   smallest_playlist_per_video.n_playlists,
   every_playlist_per_video.all_playlists
 
-FROM videos
+FROM videos_with_engagement
 
 -- LEFT JOIN keeps every row from `videos` even when the right side has no
 -- match. A plain JOIN would silently drop the 815 videos with no playlist.
 
 LEFT JOIN video_formats
-  ON video_formats.video_id = videos.video_id
+  ON video_formats.video_id = videos_with_engagement.video_id
 
 LEFT JOIN smallest_playlist_per_video
-  ON smallest_playlist_per_video.video_id = videos.video_id
+  ON smallest_playlist_per_video.video_id = videos_with_engagement.video_id
 
 LEFT JOIN every_playlist_per_video
-  ON every_playlist_per_video.video_id = videos.video_id
+  ON every_playlist_per_video.video_id = videos_with_engagement.video_id
 
-ORDER BY videos.published_at DESC;
+ORDER BY videos_with_engagement.published_at DESC;
