@@ -1,0 +1,54 @@
+/* Generated from theme/palette.json by src/palette.py - do not edit. */
+
+:root {
+  --subject-1: #2B2114;
+  --subject-2: #523E21;
+  --subject-3: #785C33;
+  --subject-4: #9E7C4B;
+  --subject-5: #C39E6D;
+  --subject-6: #8A8A90;
+  --subject-7: #C9C9CE;
+  --cat-1: #A8802E;
+  --cat-2: #3D6CA8;
+  --cat-3: #35843F;
+  --cat-4: #6B5EA8;
+  --cat-5: #A85440;
+  --chrome-gold: #C39E6D;
+  --chrome-black: #14130E;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --subject-1: #EFE0C4;
+    --subject-2: #D2B588;
+    --subject-3: #B08F5C;
+    --subject-4: #8D6F41;
+    --subject-5: #6B5330;
+    --subject-6: #8A8A90;
+    --subject-7: #55555C;
+    --cat-1: #A8802E;
+    --cat-2: #3D6CA8;
+    --cat-3: #35843F;
+    --cat-4: #6B5EA8;
+    --cat-5: #A85440;
+    --chrome-gold: #C39E6D;
+    --chrome-black: #14130E;
+  }
+}
+
+:root[data-theme="dark"] {
+  --subject-1: #EFE0C4;
+  --subject-2: #D2B588;
+  --subject-3: #B08F5C;
+  --subject-4: #8D6F41;
+  --subject-5: #6B5330;
+  --subject-6: #8A8A90;
+  --subject-7: #55555C;
+  --cat-1: #A8802E;
+  --cat-2: #3D6CA8;
+  --cat-3: #35843F;
+  --cat-4: #6B5EA8;
+  --cat-5: #A85440;
+  --chrome-gold: #C39E6D;
+  --chrome-black: #14130E;
+}

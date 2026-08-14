@@ -1,0 +1,33 @@
+{
+  "_comment": "Canonical palette. Nothing else in this repo defines a hex value. Python reads it via src/palette.py; the dashboard reads theme/palette.css, which is generated from this file.",
+
+  "ramp": {
+    "_comment": "Ordinal ramp: club gold into black, ranked by playlist volume. Key order IS rank order and is frozen on purpose - see 'why frozen' in src/palette.py. Dark values flip the anchor so visual weight always tracks volume.",
+    "Highlights":          { "light": "#2B2114", "dark": "#EFE0C4" },
+    "Interviews":          { "light": "#523E21", "dark": "#D2B588" },
+    "Inside LAFC":         { "light": "#785C33", "dark": "#B08F5C" },
+    "Features":            { "light": "#9E7C4B", "dark": "#8D6F41" },
+    "Community & Culture": { "light": "#C39E6D", "dark": "#6B5330" }
+  },
+
+  "residual": {
+    "_comment": "Not ranks. Cool greys, deliberately off the warm gold scale so they cannot read as a sixth step.",
+    "Other":      { "light": "#8A8A90", "dark": "#8A8A90" },
+    "Unlabelled": { "light": "#C9C9CE", "dark": "#55555C" }
+  },
+
+  "categorical": {
+    "_comment": "Peer categories with no ranking - match-cycle bins, scatter by subject. Validated adjacent-pair; same hex in both modes.",
+    "slot_1": { "light": "#A8802E", "dark": "#A8802E" },
+    "slot_2": { "light": "#3D6CA8", "dark": "#3D6CA8" },
+    "slot_3": { "light": "#35843F", "dark": "#35843F" },
+    "slot_4": { "light": "#6B5EA8", "dark": "#6B5EA8" },
+    "slot_5": { "light": "#A85440", "dark": "#A85440" }
+  },
+
+  "chrome": {
+    "_comment": "Club colors for page furniture only - rules, headings, accents. Gold is 2.43:1 on a light surface and must never carry data as a categorical hue.",
+    "gold":  "#C39E6D",
+    "black": "#14130E"
+  }
+}
