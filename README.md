@@ -1,7 +1,8 @@
 # lafc_content
 
-LAFC Content Scoreboard — analyzes LAFC's YouTube content performance against
-the MLS match calendar to find what drives fan engagement.
+LAFC Content Analysis — analyzes LAFC's YouTube content for 2025 and 2026.
+I examined views and engagement rate by format, content_type, and timing
+against the match calendar. 
 
 ## Data pipeline
 

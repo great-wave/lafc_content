@@ -2,27 +2,20 @@
   "_comment": "Canonical palette. Nothing else in this repo defines a hex value. Python reads it via src/palette.py; the dashboard reads theme/palette.css, which is generated from this file.",
 
   "ramp": {
-    "_comment": "Ordinal ramp: club gold into black, ranked by playlist volume. Key order IS rank order and is frozen on purpose - see 'why frozen' in src/palette.py. Dark values flip the anchor so visual weight always tracks volume.",
-    "Highlights":          { "light": "#2B2114", "dark": "#EFE0C4" },
-    "Interviews":          { "light": "#523E21", "dark": "#D2B588" },
-    "Inside LAFC":         { "light": "#785C33", "dark": "#B08F5C" },
-    "Features":            { "light": "#9E7C4B", "dark": "#8D6F41" },
-    "Community & Culture": { "light": "#C39E6D", "dark": "#6B5330" }
+    "_comment": "Club gold into black, keyed to content_type and ordered by volume. Six steps is the ceiling - an eight-step version fails the 0.06 minimum lightness gap between adjacent steps, because gold-to-black has only so much range. Key order IS rank order and is frozen on purpose: assigning by name means a data refresh cannot repaint a category. Dark values flip the anchor so visual weight always tracks volume.",
+    "highlights":      { "light": "#C39E6D", "dark": "#EFE0C4" },
+    "podcast":         { "light": "#AD8A55", "dark": "#D9C1A0" },
+    "press_interview": { "light": "#96733E", "dark": "#C0A47D" },
+    "show":            { "light": "#7A5D31", "dark": "#A2875F" },
+    "feature":         { "light": "#584324", "dark": "#816A47" },
+    "community":       { "light": "#2B2114", "dark": "#63512F" }
   },
 
   "residual": {
-    "_comment": "Not ranks. Cool greys, deliberately off the warm gold scale so they cannot read as a sixth step.",
-    "Other":      { "light": "#8A8A90", "dark": "#8A8A90" },
-    "Unlabelled": { "light": "#C9C9CE", "dark": "#55555C" }
-  },
-
-  "categorical": {
-    "_comment": "Peer categories with no ranking - match-cycle bins, scatter by subject. Validated adjacent-pair; same hex in both modes.",
-    "slot_1": { "light": "#A8802E", "dark": "#A8802E" },
-    "slot_2": { "light": "#3D6CA8", "dark": "#3D6CA8" },
-    "slot_3": { "light": "#35843F", "dark": "#35843F" },
-    "slot_4": { "light": "#6B5EA8", "dark": "#6B5EA8" },
-    "slot_5": { "light": "#A85440", "dark": "#A85440" }
+    "_comment": "Not ranks. Cool greys, deliberately off the warm gold scale so they cannot read as a seventh step. match_preview (79 videos) and full_match (9) live here rather than eating ramp steps - too thin to read a median from, and six steps are better spent on the categories that carry weight.",
+    "match_preview": { "light": "#8A8A90", "dark": "#8A8A90" },
+    "full_match":    { "light": "#55555C", "dark": "#B0B0B8" },
+    "unclassified":  { "light": "#C9C9CE", "dark": "#55555C" }
   },
 
   "chrome": {

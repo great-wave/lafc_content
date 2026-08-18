@@ -1,15 +1,15 @@
 # Findings
 
-Analysis of what drives engagement on LAFC's YouTube channel, organized by
+Analysis of engagement rate and view count on LAFC's YouTube channel, organized by
 **lever** — separating what the content team can *control* from *context* they
 can only plan around.
 
-- **Controllable levers:** when to publish (timing), what format (length/type),
-  what subject. These are where actionable recommendations live.
+- **Controllable levers:** when to publish (timing), what format (short/horizontal/live),
+  what content type, what subject. These are actionable recommendations.
 - **Uncontrollable context:** match result, opponent quality, league position.
   Useful only as a backdrop that predicts *attention*, never as a recommendation.
 
-**Primary metric:** median **views** (reach). Median, not mean, because view
+**Primary metric:** median **views** (reach). Median views because view
 counts are dominated by a handful of viral videos — the mean describes "typical
 + a few megahits," the median describes the typical video. Engagement *rate*
 (likes/comments per view) is tracked as a secondary signal where it tells a
