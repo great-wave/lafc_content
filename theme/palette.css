@@ -10,6 +10,7 @@
   --ct-match-preview: #8A8A90;
   --ct-full-match: #55555C;
   --ct-unclassified: #C9C9CE;
+  --ct-no-playlist: #A6A6AC;
   --chrome-gold: #C39E6D;
   --chrome-black: #14130E;
 }
@@ -25,6 +26,7 @@
     --ct-match-preview: #8A8A90;
     --ct-full-match: #B0B0B8;
     --ct-unclassified: #55555C;
+    --ct-no-playlist: #6E6E76;
     --chrome-gold: #C39E6D;
     --chrome-black: #14130E;
   }
@@ -40,6 +42,7 @@
   --ct-match-preview: #8A8A90;
   --ct-full-match: #B0B0B8;
   --ct-unclassified: #55555C;
+  --ct-no-playlist: #6E6E76;
   --chrome-gold: #C39E6D;
   --chrome-black: #14130E;
 }
