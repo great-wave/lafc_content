@@ -1,8 +1,8 @@
 # lafc_content
 
 LAFC Content Analysis — what drives views and engagement on LAFC's YouTube
-channel. Examines format, content type, and publishing time against the match
-calendar, separating what the content team can **control** from **context** they
+channel. Examines format, content type, and (publishing time against the match
+calendar), separating what the content team can **control** from **context** they
 can only plan around.
 
 **Scope:** 1,215 videos published 2025-01-13 to 2026-08-13, from a library of
@@ -26,9 +26,11 @@ viral videos skew the mean. Engagement rate is (likes + comments) per view.
 
 ## Headline findings
 
-**Short-form is the reach engine, and it costs engagement.** Shorts get **×3.2
+**Short-form is the reach engine, and it costs engagement.** Shorts got **×3.2
 the views** of horizontal and live videos after controlling for content type and timing — but
-**1.3 points less** engagement.
+**1.3 points less** engagement. This is about the Shorts *surface*, not about
+length: within long-form, longer videos get *more* views, not fewer — a
+highlights package 10× longer gets roughly ×6.
 
 **Reach and engagement pull against each other.** The ranking that maximises
 views is close to the reverse of the one that maximises engagement:
@@ -50,12 +52,15 @@ penalty. It holds in shorts and horizontal formats, so it is not a Shorts
 artifact — but with only one comparable player playlist (the Vela Vault), this cannot yet be
 separated from player content generally.
 
-**On-field context barely moves content performance.** Three nulls: home vs away
-does not matter; match result does not survive controls (win ×1.34, loss ×0.71,
-neither significant on 420 post-match videos); and league standing predicts
-nothing (LAFC form p=0.240, opponent strength significant pooled but gone in the
-post-match window). What the team controls — format, subject, timing — moves
-views far more than how the season is going.
+**On-field context does not move content performance.** Match result does not
+survive controls (win ×1.34, loss ×0.71, neither significant on 420 post-match
+videos). League standing predicts nothing (LAFC form p=0.155; opponent strength
+is significant pooled but disappears in the post-match window where the
+mechanism would have to operate). Home vs away *looks* like a ×1.9 away
+advantage — until you notice that 25% of away post-match videos are about Son
+against 7% of home ones. Split that out and the medians are near-identical
+(3,108 vs 2,939). What the team controls — format, subject, timing — moves views
+far more than how the season is going.
 
 Full write-up with sample sizes, caveats and open questions:
 **[docs/findings.md](docs/findings.md)**

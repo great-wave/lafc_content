@@ -66,6 +66,12 @@ around the fixture list and publish within 24h of full-time.** Content posted
 > 80% pre-match content. The 0–1 day spike survives, but the flat middle of the
 > curve was rising build-up and falling follow-up cancelling out.
 
+> **⚠ Revised again 2026-08-20 — see Finding 12.** With one-day bins on the
+> 2025+ window and full controls, the window is **48 hours, not 24**: ×2.4 in
+> the first day after kickoff, ×2.0 in the second, and gone by day three
+> (p=0.29). The recommendation to publish within 24h still holds — day one is
+> the strongest — but "gone by day 1" understates the tail.
+
 ### Finding 2 — Result modulates the spike, but is CONTEXT, not a lever
 
 Within the match-day window, result orders views cleanly — but the team can't
@@ -93,6 +99,14 @@ correct tool if we want to settle it statistically. **[Open]**
 Match-day median views: home 3,564 vs away 3,703 — effectively flat. The timing
 effect is about match *rhythm and result*, not venue. Reported because a tested
 non-effect is itself informative.
+
+> **⚠ Re-tested 2026-08-20 on the 2025+ window — the null holds, but only after
+> removing one confound.** Raw, away appears to win ×1.9 (6,465 vs 3,299,
+> p<0.001 with controls). That is Son: 25% of away post-match videos are about
+> him against 7% of home ones, because his debut and early goals came away.
+> Split it out and the medians are near-identical — away 3,108, home 2,939.
+> Year by year, 2025 is the only season where away beats home; 2022, 2023 and
+> 2026 all favour home. See Finding 12.
 
 ---
 
@@ -132,7 +146,9 @@ long-form (10m+) loses regardless.
 - Duration is a **proxy for content *type*** (a <15s clip is a hype/reaction
   clip; a 30m+ is an `Inside LAFC` episode). "Short wins" really means "hype
   clips beat long-form shows." Separating length from type needs the
-  classification work. **[Open]**
+  classification work. **[Resolved 2026-08-20 — see Finding 13. The two are
+  nearly the same variable in long-form; within a content type, longer is
+  generally better.]**
 - Small samples at the long end of match-day (30m+ n=14).
 - **Views is not the only goal.** Long-form drives watch time (what YouTube's
   algorithm and ad revenue reward) and loyalty, which raw views don't capture.
@@ -147,8 +163,10 @@ alone.
 
 ## Subject
 
-*Not yet analyzed.* Does content about specific players (e.g. Son Heung-Min) or
-rivalry opponents outperform? Requires subject tagging (classification pillar).
+**Answered 2026-08-20 — see Finding 11.** Player content is the largest single
+effect in the dataset: The Son Spotlight playlist runs ×19 views after controls,
+with no engagement penalty. Whether that generalises to *player content* or is
+specific to one player remains open.
 
 ---
 
@@ -460,38 +478,196 @@ Finding 3.
 
 ---
 
+---
+
+## Session 2026-08-20 — 2025+ window, two OLS models, context nulls
+
+All findings in this session run on the **2025-01-13 to 2026-08-13 window**
+(n=1,215 of 3,648), excluding the 2024 Shorts pivot per Finding 5. Content type
+comes from `data/playlist_types.csv` (Finding 8). Two models: `log10(views)` and
+raw `engagement_rate`, each on format, content type and match-cycle position,
+with `is_son` as a control. Baseline is a long-form `highlights` video published
+0–1 days before a match.
+
+### Finding 10 — Reach and engagement pull against each other (CONTROLLABLE)
+
+The ordering that maximises views is close to the reverse of the one that
+maximises engagement. Both columns are model coefficients against the same
+baseline, so this is not a raw-medians artifact:
+
+| content type | views | engagement |
+|---|---|---|
+| `highlights` | (reference) | (reference) |
+| `podcast` | ×0.33 | **+2.6 pts** |
+| `press_interview` | ×0.42 | +1.0 pts |
+| `show` | ×0.49 | +0.8 pts |
+| `match_preview` | ×1.09 *(n.s.)* | +1.7 pts |
+
+Format shows the same split: **Shorts get ×3.2 the views and 1.3 points less
+engagement**. So does timing — the 24 hours after kickoff is the views peak
+(×2.4) and the engagement trough (−1.0 pts), while the 24 hours *before* kickoff
+is the views floor and the engagement peak (5.98% raw).
+
+**Implication:** "what should we make?" has no single answer — it depends which
+metric is the goal. Highlights and Shorts buy reach and spend engagement;
+podcasts and interviews do the reverse. Judging a podcast on views, or a
+highlights clip on comment rate, misreads both.
+
+**Caveat:** the engagement model explains far less than the views model
+(R² 0.191 vs 0.445). These predictors say much more about who *sees* a video
+than about who *reacts* to it.
+
+### Finding 11 — One player is the largest effect in the data (CONTROLLABLE?)
+
+The Son Spotlight playlist (69 videos, all 2025+) gets **×19 the views** after
+controlling for format, content type and timing — the largest coefficient in
+either model by a wide margin.
+
+| | n | median views |
+|---|---|---|
+| The Son Spotlight | 69 | **84,187** |
+| everything else | 1,146 | 2,596 |
+
+**Not a Shorts artifact.** It holds within both formats, and is *larger* in
+long-form: ×38 long-form (60,030 vs 1,600), ×24 Shorts (164,231 vs 6,983).
+
+**No engagement penalty.** The engagement coefficient is +1.39 points at
+p=0.156 — so "no penalty" rather than "a gain". This makes it the **only lever
+in either model without a trade-off**. Shorts and post-match timing buy reach by
+spending engagement; this does not.
+
+**What this cannot tell us.** Whether this is *player content* generally or
+*Son* specifically. The Vela Vault is the only comparable player-subject
+playlist and has 4 videos in this window (25 all-time, median 5,568 — roughly
+2× the library, so player content may help generally, but 20× below Son). Four
+of the ten most-viewed videos in the window are Son Spotlight.
+
+**Marked CONTROLLABLE with a question mark:** the team controls how much content
+it makes about a given player, but not which players it has.
+
+### Finding 12 — On-field context does not move content performance (CONTEXT)
+
+Three tests, all null. Reported because the whole framing of this document is
+control vs context, and this is what the context side is worth.
+
+| test | result |
+|---|---|
+| Match result, post-match videos | win ×1.34, loss ×0.71 — **neither significant** (p=0.13, 0.27), n=420 |
+| LAFC form (points per game) | p=0.155 |
+| Opponent strength (points per game) | significant pooled (p=0.007), **gone post-match** (p=0.487) |
+
+The result null settles the open item in Finding 2: the raw win/loss gap
+(4,083 vs 1,789) does not survive controls, and is partly a content-mix effect —
+different videos get made after a loss. Only 39 post-match losses in this
+window, so this is underpowered rather than disproven.
+
+Opponent strength surviving pooled but vanishing in the window where the
+mechanism would operate suggests it is tracking fixture scheduling, not
+opponent quality.
+
+**Home vs away** looked like a real ×1.9 away advantage (6,465 vs 3,299,
+p<0.001 with controls) and is not one — see the amended null under Finding 2.
+25% of away post-match videos are about Son against 7% of home ones; split that
+out and the medians are near-identical.
+
+**One trap worth recording.** `lafc_played` correlates with views at r=+0.311.
+It is a clock, not a standings effect: games 20–30 of 2025 is exactly when Son
+arrived (20.8% of videos in that band are Son Spotlight, against ~3% elsewhere).
+Modelling it without `is_son` would produce a confident "later in the season is
+better" finding that is entirely one player.
+
+---
+
+### Finding 13 — "Short-form wins" is about the surface, not about length (CONTROLLABLE)
+
+Finding 3 flagged its own confound: duration might be a proxy for content type.
+With `content_type` now available (Finding 8), it can be tested. Shorts are
+excluded — they are all under a minute by definition, so including them would
+rediscover the format effect rather than test duration.
+
+**Duration and content type are nearly the same variable in long-form:**
+
+| content type | n | median duration |
+|---|---|---|
+| `match_preview` | 30 | 0.8 min |
+| `highlights` | 171 | 1.0 min |
+| `press_interview` | 155 | 17.0 min |
+| `show` | 82 | 21.0 min |
+| `podcast` | 253 | 36.2 min |
+
+Raw, longer means fewer views and more engagement. But **both coefficients flip
+sign** once content type is controlled:
+
+| | duration alone | + content_type |
+|---|---|---|
+| log₁₀ views | −0.1905 | **+0.3445** |
+| engagement rate | +0.0084 | **−0.0081** |
+
+*(all p < 0.001)*
+
+A sign flip on control is the signature of collinearity, not necessarily a real
+reversal — so it was checked **inside** single content types, where no type
+variation remains to confound it:
+
+| content type | n | duration IQR | views per log₁₀ minute |
+|---|---|---|---|
+| `highlights` | 171 | 0.9–5.8m | **+0.78** (p<0.001) |
+| `press_interview` | 155 | 12.0–23.4m | **+0.55** (p<0.001) |
+| `podcast` | 253 | 22.4–45.1m | +0.21 *(n.s.)* |
+| `show` | 82 | 5.1–21.0m | **−0.50** (p=0.047) |
+
+**Real but not universal.** A highlights package 10× longer gets roughly **6×
+the views** — a full match package beats a single goal clip. The same holds for
+press interviews. It is null for podcasts and *reverses* for shows.
+
+**Implication for Finding 3.** "Short-form is the reach engine" is a statement
+about the **Shorts surface**, not about length. Within long-form the
+relationship runs the other way. Reading Finding 3 as "make everything shorter"
+would be wrong — the lever is *publish to the Shorts feed*, and separately,
+*don't truncate a highlights package*.
+
+Longer highlights do cost engagement (−1.61 pts per log₁₀ minute, p<0.001) —
+the Finding 10 trade-off appearing at a third level.
+
+---
+
 ## Open questions & anomalies
 
 - **7–14 day loss anomaly:** videos 7–14 days after a loss have median 12,183
   views (n=61) — a real, unexplained spike breaking the otherwise-clean decay.
   Possibly a specific painful loss (playoff exit / big rivalry defeat) generating
   sustained content. Pull the actual titles to investigate.
-- **Result × timing interaction:** settle the result effect properly with an
-  interaction term rather than a confounded main effect.
+- ~~**Result × timing interaction:**~~ **Settled 2026-08-20 (Finding 12)** —
+  tested on post-match videos with controls; result does not survive.
+- **Is it player content, or Son?** The single biggest open question. The Vela
+  Vault is the only comparable playlist and has 4 videos in the window. Would
+  need either more player-subject playlists or a title-level player tag.
+- ~~**Duration is no longer measured.**~~ **Addressed 2026-08-20 (Finding 13)** —
+  measured within long-form, where it is not confounded with the Shorts surface.
 - **Format classification:** separate video *length* from *type* so "short wins"
   can be tested as "which type wins." Feeds both Format and Subject pillars.
   **[Addressed by Finding 6 — split subject (playlists) from format (Shorts
   probe). Implementation still open.]**
 
-### Next steps (as of 2026-08-14)
+### Next steps (as of 2026-08-20)
 
-1. ~~Add `playlists` / `playlist_items` tables to `src/pull_youtube_data.py`.~~
-   **Done** — both tables are populated, and `sql/views.sql` derives
-   `smallest_playlist_per_video` / `every_playlist_per_video` from them.
-2. Rework classification: subject from playlists, format from the Shorts probe.
-   The classifier is retired as a label source (Finding 7) — no further
-   validation of it is planned. Remaining work is the ~15 per-show content-type
-   decisions for series playlists, and a one-time hand-label of the ~329
-   horizontal videos with no playlist.
-3. **Blocker:** `format_family` does not exist in the query output — the columns
-   are `format`, `content_type`, `ml_label`, `playlist`. Cells in
-   `exploration.ipynb` keyed to it raise `KeyError`. Decide its replacement
-   (`subject`, or a rebuilt family mapping) before the cuts below.
-4. Re-run the match-cycle chart faceted by format family to separate the
-   timing effect from the composition effect (Finding 4 caveat).
-5. Revisit Finding 1's regression using signed `days_from_match` and an
-   `is_matchday × result` interaction.
-6. Decide the analysis window — 2025+ recommended (Finding 5).
+1. ~~Add `playlists` / `playlist_items` tables.~~ **Done.**
+2. ~~Rework classification: labels from playlists.~~ **Done** — Findings 7, 8.
+   The classifier is retired; `data/playlist_types.csv` is the label source.
+3. ~~`format_family` blocker.~~ **Done** — replaced by `content_type`.
+4. ~~Revisit Finding 1's regression with signed `days_from_match`.~~ **Done** —
+   one-day symmetric bins, and the window turns out to be 48h not 24h.
+5. ~~Decide the analysis window.~~ **Done** — 2025+, applied at load.
+6. **The Shorts probe is the highest-value remaining work.** 86% of Shorts sit
+   in no playlist, so `content_type` is structurally a long-form label system
+   (Finding 8) — and Shorts are the reach engine (Finding 3, Finding 10). The
+   segment that matters most is the one with no labels.
+7. **Fill the remaining `unclassified` rows.** 81 videos in the window, 69 of
+   them The Son Spotlight — which is a subject, not a format, so leaving it
+   `unclassified` is defensible but should be a recorded decision.
+8. **Watch the multiple-comparisons count.** This session ran seven or eight
+   models against one dataset. Findings 10–12 come from the two main models;
+   everything else should be treated as exploratory until re-tested on new data.
 
 ---
 
