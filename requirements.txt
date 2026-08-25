@@ -1,5 +1,13 @@
+# requirements.txt
 requests
 python-dotenv
 pandas
+numpy
+plotly
+statsmodels
+kaleido
 ipykernel
-sentence-transformers
+urllib3
+
+# notebooks/outdated/ only — the superseded sentence-transformer classifier:
+#   pip install sentence-transformers

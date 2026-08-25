@@ -30,7 +30,7 @@ After a few rounds of analyis, I noticed that LAFC's content strategy shifted in
 
 LAFC first uploaded a shorts video in 2022-Q1, when it uploaded a total of 27 videos and shorts represented less than 10% of videos. In 2024-Q1, the strategy shift began. 26% of the 53 uploads were shorts.
 
-
+![Uploads per quarter by format](img/uploads_by_format_quarterly.png)
 
 I decided to adjust the rest of my analysis to filter the data to 2024 and after. That way I analyzed videos that were uploaded during the current strategy era.
 
