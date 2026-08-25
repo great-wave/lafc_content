@@ -22,6 +22,18 @@ each is isolated (see Method Notes).
 
 ---
 
+## Strategy Switch
+
+**LAFC switched format strategy in 2024**
+
+After a few rounds of analyis, I noticed that LAFC's content strategy shifted in 2024. The share of videos in the shorts format / upload tab increased substantially. As did the overall number of uploads across formats. Shorts is a vertical, scrollable format that YouTube introduced in the US in 2021 (see: https://en.wikipedia.org/wiki/YouTube_Shorts).
+
+LAFC first uploaded a shorts video in 2022-Q1, when it uploaded a total of 27 videos and shorts represented less than 10% of videos. In 2024-Q1, the strategy shift began. 26% of the 53 uploads were shorts.
+
+
+
+I decided to adjust the rest of my analysis to filter the data to 2024 and after. That way I analyzed videos that were uploaded during the current strategy era.
+
 ## Timing
 
 ### Finding 1 — The post-match attention window is ~24 hours (CONTROLLABLE)
