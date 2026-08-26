@@ -1,35 +1,23 @@
 # lafc_content
 
 LAFC Content Analysis — what drives views and engagement on LAFC's YouTube
-channel. Examines format, content type, and (publishing time against the match
-calendar), separating what the content team can **control** from **context** they
-can only plan around.
+channel. Examines format, content type, and publishing time, separating what the content team can **control** from **context** they can only plan around.
 
-**Scope:** 1,215 videos published 2025-01-13 to 2026-08-13, from a library of
-3,648. I excluded the videos that were uploaded before, and during, the content team's strategy
-shift towards YouTube Shorts in 2024.
+**Scope:** 1,215 videos published 2025-01-13 to 2026-08-13, from a library of 3,648. I excluded the videos that were uploaded before, and during, the content team's strategy shift towards YouTube Shorts in 2024.
 
-**Primary metrics:** Median views, and engagement rate. Median views instead of mean because a handful of
-viral videos skew the mean. Engagement rate is (likes + comments) per view.
+**Primary metrics:** Median view count, and engagement rate. Median views instead of mean, because a handful of viral videos skew the mean. Engagement rate is (likes + comments) per view.
 
 **Definitions**
 
-- **Format** — shorts, horizontal, or live. Derived from YouTube channel content
-  tabs. Shorts are short vertical videos that appear in a scroll; horizontal and
-  live are 16x9.
-- **Content type** — community, feature, full_match, highlights, match_preview,
-  podcast, press_interview, show, unclassified. Derived from a handmade
-  classification of playlist titles. Videos in no playlist at all get
-  `no_playlist` — 86% of Shorts fall here.
-- **Publishing time against the match calendar** — days before or after the
-  nearest kickoff, split into categories.
+- **Format** — shorts, horizontal, or live. Derived from YouTube channel content tabs. Shorts are short vertical videos that appear in a scroll; horizontal and live are 16x9.
+- **Content type** — community, feature, full_match, highlights, match_preview, podcast, press_interview, show, unclassified. Derived from a handmade classification of playlist titles. Videos in no playlist at all get no_playlist` — 86% of Shorts fall here.
+- **Publishing time against the match calendar** — days before or after the nearest kickoff, split into bins.
 
 ## Headline findings
 
-**Short-form is the reach engine, and it costs engagement.** Shorts got **×3.2
-the views** of horizontal and live videos after controlling for content type and timing — but
-**1.3 points less** engagement. This is about the Shorts *surface*, not about
-length: within long-form, longer videos get *more* views, not fewer — a
+**The signing of Son Heung-min grew the audience** The median view count of videos uploaded in quarter 3 of 2025, **increased x5.7** from the previous quarter. This coincided with the signing of Son Heung-min on August 6, 2025. Breaking down the third quarter of 2025, into before and after the signing, further demonstrate this finding; median view count grew from 1,020 to	33,915. Engagement rate did not experience the same bump across the channel, until the next quarter, although for podcasts (which typically have the highest engagement rate) did experience a bump in Q3.
+
+**Short-form is the reach engine, and it costs engagement.** Shorts got **×4x the views** of horizontal and live videos after controlling for content type and timing — but **0.87 points less** engagement rate. This is about the Shorts *format*, not about length: within long-form, longer videos get *more* views, not fewer a
 highlights package 10× longer gets roughly ×6.
 
 **Reach and engagement pull against each other.** The ranking that maximises
