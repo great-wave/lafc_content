@@ -106,19 +106,24 @@ coefficient in the controlled regression is confounded by this and should not
 be read as a result effect. An interaction term (`is_matchday × result`) is the
 correct tool if we want to settle it statistically. **[Open]**
 
-### Null result — Home vs away doesn't matter
+### Home vs away — the earlier null is no longer supported **[Open]**
 
-Match-day median views: home 3,564 vs away 3,703 — effectively flat. The timing
-effect is about match *rhythm and result*, not venue. Reported because a tested
-non-effect is itself informative.
+Previously reported here as a null: match-day median views home 3,564 vs away
+3,703, effectively flat, with the raw away advantage attributed entirely to Son.
 
-> **⚠ Re-tested 2026-08-20 on the 2025+ window — the null holds, but only after
-> removing one confound.** Raw, away appears to win ×1.9 (6,465 vs 3,299,
-> p<0.001 with controls). That is Son: 25% of away post-match videos are about
-> him against 7% of home ones, because his debut and early goals came away.
-> Split it out and the medians are near-identical — away 3,108, home 2,939.
-> Year by year, 2025 is the only season where away beats home; 2022, 2023 and
-> 2026 all favour home. See Finding 12.
+> **⚠ Re-tested 2026-08-25 on the 2024+ window with publish-quarter controls —
+> the null does not hold.** With every Son Spotlight video excluded from the
+> sample, away still beats home: home comes out ×0.72 against away, p<0.001,
+> CI [0.64, 0.80], n=1,766. Son is not the explanation.
+>
+> Nothing in the current data accounts for it. Away fixtures differ in kickoff
+> time, competition and the kind of content produced around travel, and none of
+> those are recorded in `lafc_match_context`. Reporting a robust effect with no
+> available mechanism would be worse than deferring it, so this moves to further
+> analysis and is not carried into the conclusions.
+>
+> `result` and opponent strength remain null under the same controls — result
+> ×0.93 (loss) and ×1.03 (win), p=0.40 and p=0.69; `opp_points` p=0.41.
 
 ---
 
