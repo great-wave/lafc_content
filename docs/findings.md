@@ -106,25 +106,6 @@ coefficient in the controlled regression is confounded by this and should not
 be read as a result effect. An interaction term (`is_matchday × result`) is the
 correct tool if we want to settle it statistically. **[Open]**
 
-### Home vs away — the earlier null is no longer supported **[Open]**
-
-Previously reported here as a null: match-day median views home 3,564 vs away
-3,703, effectively flat, with the raw away advantage attributed entirely to Son.
-
-> **⚠ Re-tested 2026-08-25 on the 2024+ window with publish-quarter controls —
-> the null does not hold.** With every Son Spotlight video excluded from the
-> sample, away still beats home: home comes out ×0.72 against away, p<0.001,
-> CI [0.64, 0.80], n=1,766. Son is not the explanation.
->
-> Nothing in the current data accounts for it. Away fixtures differ in kickoff
-> time, competition and the kind of content produced around travel, and none of
-> those are recorded in `lafc_match_context`. Reporting a robust effect with no
-> available mechanism would be worse than deferring it, so this moves to further
-> analysis and is not carried into the conclusions.
->
-> `result` and opponent strength remain null under the same controls — result
-> ×0.93 (loss) and ×1.03 (win), p=0.40 and p=0.69; `opp_points` p=0.41.
-
 ---
 
 ## Format
@@ -702,3 +683,6 @@ the Finding 10 trade-off appearing at a third level.
 - **The video↔match join is temporal**, not by id: each video pairs to the
   latest match with `kickoff_utc <= published_at`. Both timestamps are stored
   UTC-'Z' second-precision so the comparison is a plain string comparison.
+
+
+Engagement rate did not experience the same bump across the channel, until the next quarter, although for podcasts (which typically have the highest engagement rate) did experience a bump in Q3.
