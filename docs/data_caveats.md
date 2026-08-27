@@ -63,6 +63,17 @@ The PPG choice matters **only mid-season**, when teams have played unequal games
 Because we store raw ingredients rather than a rank, you can compute **either**
 ordering downstream. Just decide explicitly which one your analysis wants.
 
+## Caveat 3 — `result` and `home_away` describe the *previous* match
+
+The join in `sql/videos_vs_lafc_match_context.sql` attaches each video to the most recent kickoff at or before it — `MAX(kickoff_utc) <= published_at`. So `result`, `home_away`, `goals_for`, `opponent` and the standings columns always describe the last match *played*, however long ago that was.
+
+That is not the same match `days_from_match` and `cycle_bin` use downstream, which take the nearest kickoff in *either* direction. On the 2024+ window:
+
+- **43% of videos are closer to the next match than the previous one.** For those rows `cycle_bin` describes the upcoming fixture while `result` and `home_away` describe a different, earlier match.
+- **A quarter of videos are more than a week past the match attached to them**, and the gap runs to 125 days. A video 20 days after a draw carries `result = 'D'` and has nothing to do with that draw.
+
+**Before using any of the on-field columns, restrict to the post-match window** (`cycle_bin` in `0-1 after` / `1-2 after`, n=583 on the 2024+ window), where the attached match is the one the video is actually about. Pooled across all videos those coefficients are not interpretable.
+
 ## Convention — timestamps
 
 All timestamps are UTC (nothing naive), in two textual styles:
